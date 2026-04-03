@@ -96,10 +96,30 @@ for agent_file in "$REPO_DIR/claude/agents"/*.md; do
   symlink "$agent_file" "$HOME/.claude/agents/$agent_name"
 done
 
-# --- Codex ---
-log "Linking Codex configuration..."
-symlink "$REPO_DIR/codex/instructions.md" "$HOME/.codex/instructions.md"
-symlink "$REPO_DIR/codex/config.toml"     "$HOME/.codex/config.toml"
+# --- Codex (only if installed) ---
+if command -v codex &>/dev/null; then
+  log "Linking Codex configuration..."
+  symlink "$REPO_DIR/codex/instructions.md" "$HOME/.codex/instructions.md"
+  symlink "$REPO_DIR/codex/config.toml"     "$HOME/.codex/config.toml"
+
+  # Log in with API key from ~/.openai.env if not already logged in
+  if codex login status 2>&1 | grep -q "API key"; then
+    ok "Codex already logged in"
+  elif [ -f "$HOME/.openai.env" ]; then
+    log "Logging in to Codex with API key from ~/.openai.env..."
+    OPENAI_KEY=$(grep -E 'OPENAI_API_KEY=' "$HOME/.openai.env" | cut -d'"' -f2 | tr -d "'" | tr -d ' ')
+    if [ -n "$OPENAI_KEY" ]; then
+      echo "$OPENAI_KEY" | codex login --with-api-key && ok "Codex logged in"
+    else
+      warn "OPENAI_API_KEY not found in ~/.openai.env — run: printenv OPENAI_API_KEY | codex login --with-api-key"
+    fi
+  else
+    warn "Codex found but no ~/.openai.env — run: printenv OPENAI_API_KEY | codex login --with-api-key"
+  fi
+else
+  log "Codex not installed — skipping Codex setup"
+  log "To install: https://github.com/openai/codex"
+fi
 
 # --- Summary ---
 echo ""

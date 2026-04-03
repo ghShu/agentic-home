@@ -27,6 +27,32 @@ bash ~/dev/agentic-home/install.sh
 
 Start a new Claude Code session to pick up the configuration.
 
+## First-time login
+
+API keys are stored in provider-specific env files:
+
+| File | Contains |
+|------|---------|
+| `~/.anthropic.env` | `ANTHROPIC_API_KEY` |
+| `~/.openai.env` | `OPENAI_API_KEY` |
+
+**Claude Code** handles auth interactively on first run — no extra steps needed.
+
+**Codex** stores its API key via a one-time login. `install.sh` does this automatically if `~/.openai.env` exists:
+
+```bash
+# ~/.openai.env
+export OPENAI_API_KEY="sk-proj-..."
+```
+
+If you prefer to log in manually:
+
+```bash
+printenv OPENAI_API_KEY | codex login --with-api-key
+```
+
+After login, both tools are invoked with no environment setup needed — just `claude` or `codex`.
+
 ## Update
 
 ```bash
@@ -85,8 +111,7 @@ agentic-home/
 │   │   └── update-pr/             # /update-pr skill
 │   └── agents/
 │       └── researcher.md          # Read-only research subagent
-├── codex/
-│   ├── instructions.md            # Codex system prompt
-│   └── config.toml                # Codex configuration
-└── plans/                         # Planning documents
+└── codex/
+    ├── instructions.md            # Codex system prompt
+    └── config.toml                # Codex configuration
 ```
