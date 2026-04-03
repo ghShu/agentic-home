@@ -68,6 +68,14 @@ log "Linking CLAUDE.md and AGENTS.md..."
 symlink "$REPO_DIR/CLAUDE.md"   "$HOME/CLAUDE.md"
 symlink "$REPO_DIR/AGENTS.md"   "$HOME/AGENTS.md"
 
+# --- bin scripts ---
+log "Linking bin scripts..."
+for bin_file in "$REPO_DIR/bin"/*; do
+  [ -f "$bin_file" ] || continue
+  chmod +x "$bin_file"
+  symlink "$bin_file" "$HOME/bin/$(basename "$bin_file")"
+done
+
 # --- Claude Code settings ---
 log "Linking Claude Code settings..."
 symlink "$REPO_DIR/claude/settings.json" "$HOME/.claude/settings.json"
