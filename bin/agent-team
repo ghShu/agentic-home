@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+# agent-team — Launch a Claude Code agent team in a tmux session
+#
+# Usage:
+#   agent-team              # 2 workers (default)
+#   agent-team 3            # orchestrator + 3 workers
+#   agent-team --attach     # attach to an existing agent-team session
+#
+# Each pane opens in the current directory and runs `claude`.
+# The top-left pane is the orchestrator; the rest are workers.
+# Agent teams must be enabled in ~/.claude/settings.json:
+#   "env": { "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" }
+
+set -euo pipefail
+
+SESSION="agent-team"
+DIR="$(pwd)"
+
+case "${1:-}" in
+  --help|-h)
+    echo "Usage: agent-team [workers]     # start team (default: 2 workers)"
+    echo "       agent-team --attach      # attach to existing session"
+    echo ""
+    echo "Requires CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 in ~/.claude/settings.json"
+    exit 0
+    ;;
+  --attach)
+    exec tmux attach-session -t "$SESSION"
+    ;;
+  ''|[0-9]*)
+    WORKERS="${1:-2}"
+    ;;
+  *)
+    echo "Unknown option: $1" >&2
+    exit 1
+    ;;
+esac
+
+# Die if session already exists
+if tmux has-session -t "$SESSION" 2>/dev/null; then
+  echo "Session '$SESSION' already exists. Use: agent-team --attach"
+  exit 1
+fi
+
+# Create session with first pane (orchestrator)
+tmux new-session -d -s "$SESSION" -c "$DIR" -x "$(tput cols)" -y "$(tput lines)"
+tmux rename-window -t "$SESSION:0" "agents"
+
+# Create worker panes by splitting
+for i in $(seq 1 "$WORKERS"); do
+  tmux split-window -t "$SESSION:0" -c "$DIR"
+done
+
+# Tile all panes evenly
+tmux select-layout -t "$SESSION:0" tiled
+
+# Label each pane and start claude
+tmux select-pane -t "$SESSION:0.0" -T "orchestrator"
+tmux send-keys -t "$SESSION:0.0" "claude" Enter
+
+for i in $(seq 1 "$WORKERS"); do
+  tmux select-pane -t "$SESSION:0.$i" -T "worker-$i"
+  tmux send-keys -t "$SESSION:0.$i" "claude" Enter
+done
+
+# Focus orchestrator
+tmux select-pane -t "$SESSION:0.0"
+
+echo "Agent team started: 1 orchestrator + $WORKERS workers"
+echo "Attach with: tmux attach-session -t $SESSION"
+echo "Or run: agent-team --attach"
+
+tmux attach-session -t "$SESSION"

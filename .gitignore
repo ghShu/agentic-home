@@ -1,0 +1,11 @@
+# Planning documents — local only, not for sharing
+plans/
+
+# macOS
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
