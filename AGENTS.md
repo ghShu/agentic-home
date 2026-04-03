@@ -28,6 +28,7 @@ This home directory is configured using [agentic-home](https://github.com/simonw
 - Do not read sensitive files: `.env`, `.pem`, `.key`, `~/.ssh/`, `~/.aws/`, `~/.kube/`.
 - When working in a specific project, prefer that project's own `CLAUDE.md` or `AGENTS.md` for project-specific rules.
 - Prefer asking the user over making assumptions about intent.
+- Never mention AI tools, models, or vendors (e.g. "Claude", "Anthropic", "Co-Authored-By") in commit messages.
 
 ## Multi-Agent Features (Claude Code)
 
