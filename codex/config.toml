@@ -1,0 +1,11 @@
+# Codex CLI configuration
+# See: https://github.com/openai/codex
+
+# Default model
+model = "o4-mini"
+
+# Approval mode:
+#   "suggest"    — show suggestions, require approval for each change (default, safest)
+#   "auto-edit"  — apply file edits automatically, ask before running commands
+#   "full-auto"  — apply edits and run commands without asking (use with caution)
+approval-mode = "suggest"
