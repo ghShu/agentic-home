@@ -77,6 +77,89 @@ Because all config files are symlinked, updates take effect immediately — no r
 | `codex/instructions.md` | `~/.codex/instructions.md` | Codex global system prompt |
 | `codex/config.toml` | `~/.codex/config.toml` | Codex model and approval mode |
 
+## Multi-agent
+
+Claude Code has two distinct multi-agent mechanisms with different setup requirements.
+
+### Custom subagents — works automatically
+
+Subagents defined in `~/.claude/agents/` are available in every session with no extra steps. This repo includes a `researcher` subagent for read-only codebase exploration. Claude invokes it automatically when a task fits.
+
+Add your own by creating `claude/agents/your-agent.md` and re-running `install.sh`.
+
+### Agent teams — requires multiple terminals
+
+Agent teams let multiple Claude Code sessions collaborate: one orchestrator delegates tasks, workers claim and execute them in parallel. This requires the feature flag and intentional setup.
+
+**Step 1 — enable the feature flag** in `claude/settings.json`:
+
+```json
+"env": {
+  "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+}
+```
+
+Note: agent teams cost ~7x tokens vs a single session. Only worthwhile for genuinely parallelisable work.
+
+**Step 2 — start a team** using one of the methods below.
+
+---
+
+#### Option A: tmux (recommended)
+
+This repo includes an `agent-team` script (installed to `~/bin/`) that creates a tmux session with one orchestrator pane and N worker panes, all running `claude` in your project directory.
+
+```bash
+cd ~/your-project
+
+agent-team        # orchestrator + 2 workers (default)
+agent-team 3      # orchestrator + 3 workers
+agent-team --attach  # re-attach to an existing session
+```
+
+The session layout looks like this (tiled, 3 workers shown):
+
+```
+┌─────────────────┬─────────────────┐
+│  orchestrator   │    worker-1     │
+│                 │                 │
+├─────────────────┼─────────────────┤
+│    worker-2     │    worker-3     │
+│                 │                 │
+└─────────────────┴─────────────────┘
+```
+
+Use `Ctrl-b` then arrow keys to move between panes. Quit with `Ctrl-b d` to detach (sessions persist) or close all panes to end the session.
+
+If tmux isn't installed: `brew install tmux`
+
+---
+
+#### Option B: VS Code / Cursor split terminals
+
+1. Open your project in VS Code or Cursor
+2. Open the terminal panel (`Ctrl+`` `)
+3. Click the **Split Terminal** icon (or `Cmd+Shift+5`) to create additional terminal panes
+4. Run `claude` in each terminal
+5. Use the terminal tabs/panes to switch between orchestrator and workers
+
+For a cleaner layout, use the **Terminal: Split Terminal** command from the command palette and arrange panes side by side.
+
+---
+
+#### How the team works
+
+Once multiple `claude` sessions are running in the same project:
+
+1. Tell the **orchestrator** session what you want built
+2. The orchestrator breaks the work into tasks and posts them to a shared queue
+3. Each **worker** session picks up tasks, executes them, and reports back
+4. The orchestrator synthesises the results
+
+Workers do not need any special instructions — they self-identify and claim tasks automatically once the feature flag is on.
+
+---
+
 ## Customization
 
 **Edit `CLAUDE.md`** to change the global coding rules Claude follows.
@@ -101,6 +184,8 @@ agentic-home/
 ├── install.sh                     # Setup script
 ├── CLAUDE.md                      # Global Claude Code instructions
 ├── AGENTS.md                      # Cross-agent home directory guide
+├── bin/
+│   └── agent-team                 # Launch a tmux agent team session
 ├── claude/
 │   ├── settings.json              # Claude Code configuration
 │   ├── hooks/
