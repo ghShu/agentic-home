@@ -3,12 +3,14 @@
 A minimal home directory configuration for AI-assisted agentic development. Supports **Claude Code** (primary) and **Codex CLI** (optional).
 
 Clone this repo and run the install script to get:
-- Global coding rules Claude and other agents follow in every session
-- macOS notifications when Claude finishes or waits for input
+- Global coding rules agents follow in every session
+- macOS notifications when a session finishes or waits for input
 - Session context (date, directory, git status) printed at session start
 - `/resolve-conflicts` skill — guided git conflict resolution
+- `/create-pr` skill — create a PR, creating the remote repo first if needed
 - `/update-pr` skill — push commits and regenerate PR descriptions
 - A `researcher` subagent for read-only codebase exploration
+- `agent-team` script — launch a tmux agent team with one command
 - Sensible permission rules (blocks `.env`, SSH keys, credentials, etc.)
 
 ## Prerequisites
@@ -20,38 +22,43 @@ Clone this repo and run the install script to get:
 
 ## Install
 
-```bash
-git clone https://github.com/YOUR_USERNAME/agentic-home ~/dev/agentic-home
-bash ~/dev/agentic-home/install.sh
-```
-
-Start a new Claude Code session to pick up the configuration.
-
-## First-time login
-
-API keys are stored in provider-specific env files:
-
-| File | Contains |
-|------|---------|
-| `~/.anthropic.env` | `ANTHROPIC_API_KEY` |
-| `~/.openai.env` | `OPENAI_API_KEY` |
-
-**Claude Code** handles auth interactively on first run — no extra steps needed.
-
-**Codex** stores its API key via a one-time login. `install.sh` does this automatically if `~/.openai.env` exists:
+**1. Create API key files** (before running the install script so Codex login is automatic):
 
 ```bash
-# ~/.openai.env
+# ~/.anthropic.env — Anthropic API key (optional, for direct API use)
+export ANTHROPIC_API_KEY="sk-ant-..."
+
+# ~/.openai.env — OpenAI API key (required for Codex)
 export OPENAI_API_KEY="sk-proj-..."
 ```
 
-If you prefer to log in manually:
+**2. Clone and install:**
+
+```bash
+git clone https://github.com/ghShu/agentic-home ~/dev/agentic-home
+bash ~/dev/agentic-home/install.sh
+```
+
+**3. Add `~/bin/` to your PATH** if it isn't already (scripts like `agent-team` live there):
+
+```bash
+# Add to ~/.zshrc or ~/.bashrc
+export PATH="$HOME/bin:$PATH"
+```
+
+**4. Start a new shell session** to pick up the configuration.
+
+## First-time login
+
+**Claude Code** handles auth interactively on first run — no extra steps needed.
+
+**Codex** is logged in automatically by `install.sh` if `~/.openai.env` exists. To log in manually:
 
 ```bash
 printenv OPENAI_API_KEY | codex login --with-api-key
 ```
 
-After login, both tools are invoked with no environment setup needed — just `claude` or `codex`.
+After login, both tools need no environment setup — just `claude` or `codex`.
 
 ## Update
 
@@ -72,8 +79,10 @@ Because all config files are symlinked, updates take effect immediately — no r
 | `claude/hooks/session-start.sh` | `~/.claude/hooks/` | Prints context at session start ([hooks docs](https://docs.anthropic.com/en/docs/claude-code/hooks)) |
 | `claude/hooks/notify.sh` | `~/.claude/hooks/` | macOS notification on stop/idle |
 | `claude/skills/resolve-conflicts/` | `~/.claude/skills/` | `/resolve-conflicts` slash command ([skills docs](https://docs.anthropic.com/en/docs/claude-code/skills)) |
-| `claude/skills/update-pr/` | `~/.claude/skills/` | `/update-pr` slash command |
+| `claude/skills/create-pr/` | `~/.claude/skills/` | `/create-pr` slash command — create PR, creating remote repo first if needed |
+| `claude/skills/update-pr/` | `~/.claude/skills/` | `/update-pr` slash command — push commits and regenerate PR description |
 | `claude/agents/researcher.md` | `~/.claude/agents/` | Read-only researcher subagent ([subagents docs](https://docs.anthropic.com/en/docs/claude-code/sub-agents)) |
+| `bin/agent-team` | `~/bin/agent-team` | Launch a tmux agent team session |
 | `codex/instructions.md` | `~/.codex/instructions.md` | Codex global system prompt |
 | `codex/config.toml` | `~/.codex/config.toml` | Codex model and approval mode |
 
@@ -168,12 +177,7 @@ Workers do not need any special instructions — they self-identify and claim ta
 
 **Add subagents** by creating `claude/agents/your-agent.md` and re-running `install.sh`.
 
-**Enable Agent Teams** (experimental, ~7x token cost):
-Add to `claude/settings.json` under `"env"`:
-```json
-"CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
-```
-See [agent teams docs](https://docs.anthropic.com/en/docs/claude-code/agent-teams).
+**Enable Agent Teams** — see the [Multi-agent](#multi-agent) section above.
 
 **Adjust permissions** in `claude/settings.json` under `"permissions"` → `"deny"`.
 
@@ -193,6 +197,7 @@ agentic-home/
 │   │   └── notify.sh              # macOS notification hook
 │   ├── skills/
 │   │   ├── resolve-conflicts/     # /resolve-conflicts skill
+│   │   ├── create-pr/             # /create-pr skill
 │   │   └── update-pr/             # /update-pr skill
 │   └── agents/
 │       └── researcher.md          # Read-only research subagent
