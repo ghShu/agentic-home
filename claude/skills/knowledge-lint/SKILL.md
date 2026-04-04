@@ -1,6 +1,6 @@
 ---
 name: knowledge-lint
-description: Run health checks over ~/knowledge/wiki/. Detects orphaned articles, broken links, unprocessed inbox items, stubs, islands (no backlinks), and duplicate concepts. Writes a report to wiki/_meta/lint-report.md.
+description: Run health checks over ~/knowledge/. Detects orphaned articles, broken links, unprocessed/malformed raw files, unreferenced images, stubs, islands (no backlinks), and duplicate concepts. Writes a report to wiki/_meta/lint-report.md.
 ---
 
 # Knowledge Lint
@@ -47,6 +47,13 @@ User says: "lint", "check my kb", "health check", "check the wiki", or runs `/kn
 **F. Unprocessed inbox**
 - Glob `~/knowledge/raw/**/*.md`
 - Flag: any raw file with `status: unprocessed` (sitting in inbox, not yet compiled)
+- Flag: any raw `.md` file with no YAML front matter (manually dropped — needs front matter before compiling)
+- Flag: any raw `.md` file with front matter but missing the `status` field (will be treated as unprocessed by compile, but should be explicit)
+
+**G-img. Unreferenced images**
+- Glob `~/knowledge/raw/images/**/*` for all image files (`.png`, `.jpg`, `.jpeg`, `.gif`, `.svg`, `.webp`)
+- For each image: search `~/knowledge/wiki/**/*.md` for any reference to that filename
+- Flag: images in `raw/images/` not referenced by any wiki article (orphaned assets)
 
 **G. Potential duplicates**
 - Look for pairs of articles with very similar titles or overlapping content summaries in `_index.md`
@@ -82,6 +89,15 @@ issues_found: M
 ## Warnings
 ### Unprocessed inbox items
 - raw/articles/YYYY-MM-DD-slug.md (status: unprocessed)
+
+### Raw files missing front matter (manually dropped)
+- raw/articles/some-file.md (no front matter — run /knowledge-compile to auto-add)
+
+### Raw files missing status field
+- raw/articles/some-file.md (has front matter but no status field)
+
+### Unreferenced images
+- raw/images/diagram.png (not referenced by any wiki article)
 
 ### Stubs / incomplete articles
 - wiki/topic/concept.md (status: stub)

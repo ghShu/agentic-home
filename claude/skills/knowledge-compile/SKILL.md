@@ -22,14 +22,32 @@ Read both files before doing anything else:
 ### Step 2 — Find unprocessed documents
 
 Glob `~/knowledge/raw/**/*.md` and read each file's front matter.
-Identify files where `status: unprocessed`.
+
+A file is considered **unprocessed** if any of the following are true:
+- `status: unprocessed` is set explicitly
+- The file has no YAML front matter at all (manually dropped file)
+- The file has front matter but no `status` field
+
+A file is **skipped** only if `status: compiled` is explicitly set.
 
 If there are no unprocessed files, print:
 ```
 No unprocessed documents found in ~/knowledge/raw/.
-Use /knowledge-ingest to add new sources.
+Use /knowledge-ingest to add new sources, or drop .md files into raw/ directly.
 ```
 And stop.
+
+**Manually dropped files (no front matter):** Before compiling, prepend minimal front matter so the file can be tracked:
+```yaml
+---
+title: "<inferred from filename or first heading>"
+source: "local"
+date: "<file modification date or today>"
+tags: []
+status: unprocessed
+---
+```
+Use Edit to add this block at the top of the file, then proceed to compile it normally.
 
 ### Step 3 — Plan the compilation
 
