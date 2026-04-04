@@ -1,0 +1,115 @@
+# Knowledge Base Conventions
+
+This file is read by Claude at the start of every knowledge skill invocation.
+Do not delete it. Edit it as your knowledge base evolves.
+
+---
+
+## Directory Structure
+
+```
+~/knowledge/
+├── raw/          # Source material inbox — LLM reads but rarely edits these
+│   ├── articles/ # Web articles, blog posts (YYYY-MM-DD-<slug>.md)
+│   ├── papers/   # PDFs or transcripts of research papers
+│   └── images/   # Screenshots, diagrams
+├── wiki/         # LLM-compiled knowledge — do not edit manually
+│   ├── _index.md # Master index (one line per article)
+│   ├── _meta/    # Lint reports and health metadata
+│   └── <topic>/  # One directory per concept cluster
+└── outputs/      # Rendered deliverables
+    ├── reports/  # Q&A outputs (YYYY-MM-DD-<slug>.md)
+    └── slides/   # Marp slideshows
+```
+
+---
+
+## Front Matter Fields
+
+Every file in `raw/` must have YAML front matter:
+
+```yaml
+---
+title: "Article Title"
+source: "https://original-url.com"
+date: "YYYY-MM-DD"
+tags: [tag1, tag2]
+status: unprocessed   # unprocessed | compiled | stub | draft | complete
+---
+```
+
+Every file in `wiki/` must have YAML front matter:
+
+```yaml
+---
+title: "Concept Name"
+tags: [tag1, tag2]
+status: complete      # stub | draft | complete
+sources:
+  - raw/articles/YYYY-MM-DD-slug.md
+---
+```
+
+---
+
+## `_index.md` Format
+
+One line per wiki article, kept sorted by topic:
+
+```
+- [[topic/concept]] — One-sentence summary of what this article covers. (source: raw/articles/slug.md)
+```
+
+The `_index.md` is the LLM's map of the entire wiki. Keep it accurate and complete.
+Every wiki article must have exactly one entry here. Orphans and missing entries are lint errors.
+
+---
+
+## Wikilink Format
+
+Use Obsidian `[[wikilink]]` syntax for all internal links (not markdown href syntax).
+This enables Obsidian's graph view and backlink detection.
+
+- Link to a concept: `[[topic/concept]]`
+- Link with display text: `[[topic/concept|display text]]`
+
+Every article must have a `## See Also` section at the bottom with wikilinks to related concepts.
+
+---
+
+## Topic Directory Naming
+
+- Lowercase, hyphenated: `machine-learning`, `distributed-systems`, `product-design`
+- Broad concept clusters — prefer fewer, broader topics over many narrow ones
+- Each topic directory has an `index.md` summarising the topic and listing all articles in it
+
+---
+
+## Article Length & Style
+
+- Target: under 500 words per article unless the concept genuinely requires more
+- Write in present tense, encyclopedic style
+- Lead with a one-sentence definition of the concept
+- Never delete content — archive superseded sections with `> [Archived: YYYY-MM-DD]`
+
+---
+
+## Compile Behaviour
+
+When a raw document spans multiple topics:
+1. Create one **primary** article in the most relevant topic directory
+2. Add `## See Also` wikilinks from related topic articles pointing to the primary
+3. Do not duplicate content across articles — cross-link instead
+
+When updating an existing wiki article with new information from a raw doc:
+1. Merge new information into the existing article
+2. Add the new source to the article's `sources:` front matter list
+3. Update the one-line summary in `_index.md` if it has changed
+
+---
+
+## PDF Workflow (if applicable)
+
+If PDFs become a significant source type, consider Zotero + Zotero2MD plugin to export
+highlights and annotations as structured markdown into `raw/papers/`. See the plan at
+`~/dev/agentic-home/plans/knowledge-base.md` for details.

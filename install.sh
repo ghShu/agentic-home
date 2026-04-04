@@ -129,6 +129,16 @@ else
   log "To install: https://github.com/openai/codex"
 fi
 
+# --- Knowledge base skeleton ---
+log "Ensuring knowledge base skeleton..."
+KB="$HOME/knowledge"
+mkdir -p "$KB/raw/articles" "$KB/raw/papers" "$KB/raw/images"
+mkdir -p "$KB/wiki/_meta"
+mkdir -p "$KB/outputs/reports" "$KB/outputs/slides"
+
+[ ! -f "$KB/KNOWLEDGE.md" ] && cp "$REPO_DIR/knowledge/KNOWLEDGE.md.seed" "$KB/KNOWLEDGE.md" && ok "Seeded ~/knowledge/KNOWLEDGE.md"
+[ ! -f "$KB/wiki/_index.md" ] && cp "$REPO_DIR/knowledge/wiki-index.md.seed" "$KB/wiki/_index.md" && ok "Seeded ~/knowledge/wiki/_index.md"
+
 # --- Summary ---
 echo ""
 echo "Done."
