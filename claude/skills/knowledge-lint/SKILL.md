@@ -1,6 +1,6 @@
 ---
 name: knowledge-lint
-description: Run health checks over ~/knowledge/. Detects orphaned articles, broken links, unprocessed/malformed raw files, unreferenced images, stubs, islands (no backlinks), and duplicate concepts. Writes a report to wiki/_meta/lint-report.md.
+description: Run health checks over ~/knowledge/. Detects orphaned articles, broken links, unprocessed/malformed raw files, unreferenced images, unresolved curated references, stubs, islands (no backlinks), and duplicate concepts. Writes a report to wiki/_meta/lint-report.md.
 ---
 
 # Knowledge Lint
@@ -55,6 +55,12 @@ User says: "lint", "check my kb", "health check", "check the wiki", or runs `/kn
 - For each image: search `~/knowledge/wiki/**/*.md` for any reference to that filename
 - Flag: images in `raw/images/` not referenced by any wiki article (orphaned assets)
 
+**H. Unresolved curated references**
+- Glob `~/knowledge/raw/**/*.md` and read each file's `references.curated` front matter list
+- For each curated reference URL: check if a raw file with that `source:` URL already exists
+- Flag: curated references not yet ingested (known-valuable sources sitting uningestd)
+- Skip `in_text` references — only curated ones are flagged
+
 **G. Potential duplicates**
 - Look for pairs of articles with very similar titles or overlapping content summaries in `_index.md`
 - Flag: likely duplicates as candidates for merging (do not auto-merge)
@@ -98,6 +104,10 @@ issues_found: M
 
 ### Unreferenced images
 - raw/images/diagram.png (not referenced by any wiki article)
+
+### Unresolved curated references
+- "Paper Title" (https://example.com/paper) — curated in raw/articles/YYYY-MM-DD-slug.md, not yet ingested
+  → run: /knowledge-ingest https://example.com/paper
 
 ### Stubs / incomplete articles
 - wiki/topic/concept.md (status: stub)
