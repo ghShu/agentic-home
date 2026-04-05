@@ -49,8 +49,43 @@ git branch --show-current
 gh repo view --json defaultBranchRef -q .defaultBranchRef.name
 ```
 
-- If on the default branch (`main`/`master`): stop — "Create a feature branch first."
 - Check if a PR already exists: `gh pr view 2>/dev/null`. If one exists: stop — "A PR already exists for this branch. Use `/pr:update` instead."
+- If on the default branch (`main`/`master`): see Step 3a.
+
+#### Step 3a — Propose a feature branch (on default branch)
+
+First check whether there is anything to PR:
+
+```bash
+git log origin/main..HEAD --oneline   # unpushed commits
+git status --short                    # uncommitted changes
+```
+
+If both are empty (nothing new since last push): stop — "Nothing to PR: no unpushed commits and no uncommitted changes."
+
+Otherwise, infer a branch name from recent commit messages or staged changes:
+- Read `git log origin/main..HEAD --oneline` (or `git diff --stat` if changes are uncommitted)
+- Derive a kebab-case name with a conventional prefix, e.g. `feat/add-kb-plugin`, `fix/zshrc-skip-warning`
+- Keep it under 50 chars
+
+Propose it to the user:
+
+```
+You're on main. Suggested branch: feat/add-kb-plugin
+Create and switch? [Y/n]
+```
+
+If the user confirms (or presses Enter):
+```bash
+git checkout -b <proposed-branch>
+```
+
+If the user declines, ask them to provide a branch name, then:
+```bash
+git checkout -b <user-branch>
+```
+
+Continue to Step 4.
 
 ### Step 4 — Push branch
 
