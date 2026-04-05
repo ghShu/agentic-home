@@ -104,10 +104,14 @@ if [ -d "$REPO_DIR/claude/plugins" ] && command -v claude &>/dev/null; then
   for plugin_dir in "$REPO_DIR/claude/plugins"/*/; do
     [ -f "$plugin_dir/.claude-plugin/plugin.json" ] || continue
     plugin_name="$(basename "$plugin_dir")"
-    if claude plugins install "${plugin_name}@agentic-home" 2>&1 | grep -q "Successfully installed"; then
+    install_out=$(claude plugins install "${plugin_name}@agentic-home" 2>&1)
+    install_exit=$?
+    if [ $install_exit -eq 0 ]; then
       ok "Installed ${plugin_name}@agentic-home"
-    else
+    elif echo "$install_out" | grep -qi "already installed"; then
       ok "${plugin_name}@agentic-home already installed"
+    else
+      warn "Failed to install ${plugin_name}@agentic-home: $install_out"
     fi
   done
 elif ! command -v claude &>/dev/null; then
