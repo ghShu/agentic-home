@@ -101,10 +101,6 @@ check_prereqs() {
     sudo xcodebuild -license accept >> "$OUTPUT_FILE" 2>&1 || true
   fi
 
-  echo_i "Accepting Xcode license..."
-  _ensure_sudo
-  sudo xcodebuild -license accept >> "$OUTPUT_FILE" 2>&1 || true
-
   mkdir -p ~/.ssh
   echo_i "Prerequisites OK"
 }
@@ -198,7 +194,7 @@ install_nerd_font() {
   echo_t "Installing JetBrains Mono Nerd Font (for Starship glyphs)"
   _load_brew
 
-  if [ -d ~/Library/Fonts/JetBrainsMonoNerdFont-Regular.ttf ] || \
+  if [ -f ~/Library/Fonts/JetBrainsMonoNerdFont-Regular.ttf ] || \
      ls ~/Library/Fonts/JetBrainsMono* >/dev/null 2>&1; then
     echo_i "JetBrains Mono already installed — skipping"
     return 0
@@ -455,7 +451,7 @@ setup_agentic_home() {
   else
     mkdir -p "$HOME/dev"
     echo_i "Cloning agentic-home..."
-    git clone https://github.com/ghShu/agentic-home "$repo_dir" >> "$OUTPUT_FILE" 2>&1
+    git clone git@github.com:ghShu/agentic-home.git "$repo_dir" >> "$OUTPUT_FILE" 2>&1
   fi
 
   echo_i "Running install.sh..."
