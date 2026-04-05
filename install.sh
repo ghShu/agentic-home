@@ -96,6 +96,34 @@ for skill_dir in "$REPO_DIR/claude/skills"/*/; do
   symlink "$skill_dir" "$HOME/.claude/skills/$skill_name"
 done
 
+# --- Plugins (persistent via shell alias) ---
+log "Configuring Claude Code plugins..."
+if [ -d "$REPO_DIR/claude/plugins" ]; then
+  PLUGIN_DIR_FLAGS=""
+  for plugin_dir in "$REPO_DIR/claude/plugins"/*/; do
+    [ -f "$plugin_dir/.claude-plugin/plugin.json" ] || continue
+    PLUGIN_DIR_FLAGS="$PLUGIN_DIR_FLAGS --plugin-dir \"$plugin_dir\""
+  done
+
+  if [ -n "$PLUGIN_DIR_FLAGS" ]; then
+    ALIAS_LINE="alias claude='claude $PLUGIN_DIR_FLAGS'"
+    MARKER="# agentic-home: claude plugin dirs"
+    ZSHRC="$HOME/.zshrc"
+
+    # Remove stale entry if present
+    if grep -q "$MARKER" "$ZSHRC" 2>/dev/null; then
+      # Remove the marker line and the alias line after it
+      sed -i '' "/$MARKER/{N;d;}" "$ZSHRC"
+    fi
+
+    # Append fresh entry
+    printf '\n%s\n%s\n' "$MARKER" "$ALIAS_LINE" >> "$ZSHRC"
+    ok "Wrote claude plugin alias to ~/.zshrc (restart shell or: source ~/.zshrc)"
+  fi
+else
+  log "No plugins directory found — skipping"
+fi
+
 # --- Agents ---
 log "Linking agents..."
 for agent_file in "$REPO_DIR/claude/agents"/*.md; do
