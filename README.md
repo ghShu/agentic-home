@@ -13,40 +13,43 @@ Clone this repo and run the install script to get:
 - `agent-team` script — launch a tmux agent team with one command
 - Sensible permission rules (blocks `.env`, SSH keys, credentials, etc.)
 
-## Prerequisites
+## Setup
 
-- [Claude Code](https://claude.ai/code) CLI installed
-- macOS (hooks use `osascript` for notifications; Linux users can swap in `notify-send`)
-- [Codex CLI](https://github.com/openai/codex) (optional)
-- [GitHub CLI (`gh`)](https://cli.github.com/) (optional, needed for `/update-pr`)
-
-## Install
-
-**1. Create API key files** (before running the install script so Codex login is automatic):
+**1. Trigger Xcode CLT installation** (required on any Mac — a popup will appear):
 
 ```bash
-# ~/.anthropic.env — Anthropic API key (optional, for direct API use)
-export ANTHROPIC_API_KEY="sk-ant-..."
-
-# ~/.openai.env — OpenAI API key (required for Codex)
-export OPENAI_API_KEY="sk-proj-..."
+xcode-select --install
 ```
 
-**2. Clone and install:**
+**2. Create API key files** so credentials are ready when needed:
 
 ```bash
-git clone https://github.com/ghShu/agentic-home ~/dev/agentic-home
-bash ~/dev/agentic-home/install.sh
+echo 'export ANTHROPIC_API_KEY="sk-ant-..."' > ~/.anthropic.env && chmod 600 ~/.anthropic.env
+echo 'export OPENAI_API_KEY="sk-proj-..."'   > ~/.openai.env    && chmod 600 ~/.openai.env
 ```
 
-**3. Add `~/bin/` to your PATH** if it isn't already (scripts like `agent-team` live there):
+**3. Run `agentic-dev-setup.sh`:**
 
 ```bash
-# Add to ~/.zshrc or ~/.bashrc
-export PATH="$HOME/bin:$PATH"
+curl -fsSL https://raw.githubusercontent.com/ghShu/agentic-home/main/agentic-dev-setup.sh | bash
 ```
 
-**4. Start a new shell session** to pick up the configuration.
+The script opens with a prompt:
+
+```
+Fresh Mac? Run full setup (Homebrew, terminal, dev tools, macOS defaults) [Y/N]
+```
+
+- **Y** — installs everything from scratch: Homebrew, Ghostty, oh-my-zsh, Starship, dev tools, Git config, macOS defaults, Node, Claude Code, then clones this repo and runs `install.sh`.
+- **N** — skips straight to Node → Claude Code → clone + `install.sh`. Use this on an existing Mac that already has the basics.
+
+If the script is interrupted, resume from any step:
+
+```bash
+bash ~/agentic-dev-setup.sh --from install_claude_code
+```
+
+**4. Start a new shell session** to pick up the configuration, then run `claude` to complete authentication.
 
 ## First-time login
 
@@ -185,7 +188,8 @@ Workers do not need any special instructions — they self-identify and claim ta
 
 ```
 agentic-home/
-├── install.sh                     # Setup script
+├── agentic-dev-setup.sh                   # Fresh Mac bootstrap (Homebrew → Claude Code → install.sh)
+├── install.sh                     # Symlink config into ~/.claude/, ~/bin/, etc.
 ├── CLAUDE.md                      # Global Claude Code instructions
 ├── AGENTS.md                      # Cross-agent home directory guide
 ├── bin/
@@ -199,6 +203,9 @@ agentic-home/
 │   │   ├── resolve-conflicts/     # /resolve-conflicts skill
 │   │   ├── create-pr/             # /create-pr skill
 │   │   └── update-pr/             # /update-pr skill
+│   ├── plugins/
+│   │   ├── pr/                    # pr:checkout, pr:create, pr:review, …
+│   │   └── kb/                    # kb:ingest, kb:compile, kb:lint, kb:query
 │   └── agents/
 │       └── researcher.md          # Read-only research subagent
 └── codex/
