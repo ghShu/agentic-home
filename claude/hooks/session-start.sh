@@ -13,3 +13,11 @@ if git rev-parse --is-inside-work-tree &>/dev/null 2>&1; then
 fi
 
 echo "===================="
+
+# Ensure agentsview is running
+if command -v agentsview &>/dev/null; then
+  if ! curl -s --max-time 1 http://localhost:8080/api/v1/version >/dev/null 2>&1; then
+    nohup agentsview -no-browser >/tmp/agentsview.log 2>&1 &
+    echo "agentsview started → http://localhost:8080"
+  fi
+fi

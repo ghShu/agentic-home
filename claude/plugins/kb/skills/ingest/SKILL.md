@@ -120,7 +120,26 @@ Strip all HTML artifacts. Preserve headings, lists, and code blocks.
 
 **Never write anything to `~/knowledge/wiki/`** — ingest is strictly an inbox operation.
 
-### Step 8 — Confirm
+### Step 8 — Append to log
+
+Append an entry to `~/knowledge/wiki/log.md`. If the file does not exist yet, create it with a header first (see KNOWLEDGE.md for format). Append at the end:
+
+```
+## [YYYY-MM-DD] ingest | Article Title
+Source: https://original-url.com
+Tags: tag1, tag2
+Files: raw/articles/YYYY-MM-DD-slug.md (N images)
+```
+
+If follow-refs mode ingested multiple articles, list each one:
+```
+## [YYYY-MM-DD] ingest | Article Title (+ N references)
+Source: https://original-url.com
+Tags: tag1, tag2
+Files: raw/articles/YYYY-MM-DD-slug.md, raw/articles/YYYY-MM-DD-ref1.md, ...
+```
+
+### Step 9 — Confirm
 
 Print:
 ```

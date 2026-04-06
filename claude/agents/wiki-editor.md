@@ -46,7 +46,12 @@ sources:
 3. Read the topic `wiki/<topic>/index.md` if it exists
 4. Write the article to `wiki/<topic>/<concept>.md`
 5. Update `wiki/<topic>/index.md` — add the new article to its article list
-6. Update `wiki/_index.md` — add one line: `- [[topic/concept]] — one-sentence summary. (source: raw/...)`
+6. Update `wiki/_index.md` — add one line in the correct category section:
+   - `## Concepts` for general ideas, techniques, patterns
+   - `## Entities` for specific named tools, models, frameworks
+   - `## Syntheses` for articles from query answers (`sources: [synthesized]`)
+   - `## Sources` for source summary articles
+   - Format: `- [[topic/concept]] — one-sentence summary. (source: raw/...)`
 
 ## How to update an existing article
 
