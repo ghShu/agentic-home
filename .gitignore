@@ -9,3 +9,6 @@ plans/
 .idea/
 *.swp
 *.swo
+
+# Claude Code runtime
+.claude/
