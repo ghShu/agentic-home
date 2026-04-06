@@ -156,7 +156,7 @@ fi
 # --- Knowledge base skeleton ---
 log "Ensuring knowledge base skeleton..."
 KB="$HOME/knowledge"
-mkdir -p "$KB/raw/articles" "$KB/raw/papers" "$KB/raw/images"
+mkdir -p "$KB/raw/articles" "$KB/raw/papers" "$KB/raw/images" "$KB/raw/notes"
 mkdir -p "$KB/wiki/_meta"
 mkdir -p "$KB/outputs/reports" "$KB/outputs/slides"
 

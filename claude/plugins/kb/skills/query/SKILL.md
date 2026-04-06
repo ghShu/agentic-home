@@ -11,6 +11,15 @@ Answer questions using only the content in `~/knowledge/wiki/`.
 
 User asks a question prefixed with "kb:" or "ask my kb", uses `/kb:query`, or asks something that should be answered from the personal knowledge base rather than general knowledge.
 
+## Usage
+
+```
+/kb:query <question>
+/kb:query <question> --report     # save answer as a report file
+/kb:query <question> --slides     # save answer as a Marp slideshow
+/kb:query <question> --file-wiki  # file answer directly into the wiki
+```
+
 ## Instructions
 
 ### Step 1 — Read conventions
