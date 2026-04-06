@@ -110,7 +110,7 @@ gh pr merge <ref> --squash --auto
 ```
 Note: `--auto` enables auto-merge; the PR will merge automatically once all requirements are met. Stop here — post-merge cleanup will happen when the queue processes the PR.
 
-Otherwise, use the GitHub API directly — **do not use `gh pr merge`**. `gh pr merge` attempts a local `git checkout` after merging, which fails when the base branch is locked by another worktree.
+Otherwise, use the GitHub API directly — **do not use `gh pr merge`**. `gh pr merge` attempts a local `git checkout` after merging, which fails when the base branch is already checked out in another worktree. This applies to any worktree setup (`claude --worktree`, `git worktree add`, etc.) — the locking is enforced by git, not by the tool that created the worktree.
 
 ```bash
 OWNER=$(gh repo view --json owner -q .owner.login)
