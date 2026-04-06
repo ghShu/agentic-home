@@ -130,19 +130,18 @@ Map strategy argument to `merge_method`: `squash` → `squash`, `merge` → `mer
 
 ### Step 8 — Post-merge cleanup
 
-Pull the updated base branch:
+Fast-forward the local base branch without checking it out:
 
 ```bash
-git pull origin <base-branch>
+git fetch origin <base-branch>:<base-branch>
 ```
 
-If currently on the merged head branch (not the base branch), switch first:
+This updates the local base branch ref directly regardless of which branch is currently checked out, and works correctly in worktrees where the base branch may be locked by another worktree.
+
+If currently on the merged head branch and the base branch is NOT locked by another worktree, optionally switch:
 ```bash
 git checkout <base-branch>
-git pull origin <base-branch>
 ```
-
-Use `git pull origin <base-branch>` explicitly — `git pull` without arguments fails when the local branch has no upstream tracking set (common in worktrees). Do not use `git checkout <base-branch>` if that branch is already checked out in another worktree — in that case, stay on the current branch and only run the pull.
 
 ### Step 9 — Print result
 
