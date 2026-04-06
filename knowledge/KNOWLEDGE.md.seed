@@ -12,9 +12,11 @@ Do not delete it. Edit it as your knowledge base evolves.
 ├── raw/          # Source material inbox — LLM reads but rarely edits these
 │   ├── articles/ # Web articles, blog posts (YYYY-MM-DD-<slug>.md)
 │   ├── papers/   # PDFs or transcripts of research papers
+│   ├── notes/    # Quick-capture notes from sessions (no source URL required)
 │   └── images/   # Screenshots, diagrams
 ├── wiki/         # LLM-compiled knowledge — do not edit manually
-│   ├── _index.md # Master index (one line per article)
+│   ├── _index.md # Master index (categorized, one line per article)
+│   ├── log.md    # Append-only activity log (ingest/compile/query/lint entries)
 │   ├── _meta/    # Lint reports and health metadata
 │   └── <topic>/  # One directory per concept cluster
 └── outputs/      # Rendered deliverables
@@ -26,7 +28,7 @@ Do not delete it. Edit it as your knowledge base evolves.
 
 ## Front Matter Fields
 
-Every file in `raw/` must have YAML front matter:
+Every file in `raw/articles/` and `raw/papers/` must have YAML front matter:
 
 ```yaml
 ---
@@ -35,6 +37,18 @@ source: "https://original-url.com"
 date: "YYYY-MM-DD"
 tags: [tag1, tag2]
 status: unprocessed   # unprocessed | compiled | stub | draft | complete
+---
+```
+
+Files in `raw/notes/` use a lighter front matter (no `source:` required):
+
+```yaml
+---
+title: "Note title or observation"
+date: "YYYY-MM-DD"
+tags: [tag1, tag2]
+status: unprocessed
+type: note
 ---
 ```
 
@@ -50,18 +64,65 @@ sources:
 ---
 ```
 
+Wiki articles synthesized from queries (not backed by a raw source) use `sources: [synthesized]`.
+
 ---
 
 ## `_index.md` Format
 
-One line per wiki article, kept sorted by topic:
+Entries are grouped by category. One line per article:
 
+```markdown
+## Concepts
+- [[topic/concept]] — One-sentence summary. (source: raw/articles/slug.md)
+
+## Entities
+- [[topic/specific-tool]] — One-sentence summary. (source: raw/articles/slug.md)
+
+## Syntheses
+- [[topic/analysis]] — Synthesized from query on YYYY-MM-DD.
+
+## Sources
+- [[topic/source-summary]] — Summary of a specific source document.
 ```
-- [[topic/concept]] — One-sentence summary of what this article covers. (source: raw/articles/slug.md)
-```
+
+**Category definitions:**
+- **Concepts** — general ideas, techniques, strategies, patterns
+- **Entities** — specific named things: tools, models, frameworks, systems (e.g. ZeRO optimizer, Claude Code)
+- **Syntheses** — articles created from query answers filed back into the wiki
+- **Sources** — summary articles for specific source documents (optional, use sparingly)
 
 The `_index.md` is the LLM's map of the entire wiki. Keep it accurate and complete.
 Every wiki article must have exactly one entry here. Orphans and missing entries are lint errors.
+
+---
+
+## `log.md` Format
+
+`wiki/log.md` is an **append-only** chronological record of all knowledge base operations.
+Each entry starts with a parseable prefix — do not reformat existing entries.
+
+```markdown
+## [YYYY-MM-DD] ingest | Article Title
+Source: https://...
+Tags: tag1, tag2
+Files: raw/articles/YYYY-MM-DD-slug.md (N images)
+
+## [YYYY-MM-DD] compile | N docs processed
+  - raw/articles/YYYY-MM-DD-slug.md → wiki/topic/concept.md (new)
+  - raw/articles/YYYY-MM-DD-slug2.md → wiki/topic/concept2.md (updated)
+
+## [YYYY-MM-DD] query | "Question text"
+Output: inline | report: outputs/reports/YYYY-MM-DD-slug.md | wiki: wiki/topic/concept.md
+
+## [YYYY-MM-DD] lint | N articles, X critical, Y warnings
+Report: wiki/_meta/lint-report.md
+
+## [YYYY-MM-DD] note | Note title
+Filed: raw/notes/YYYY-MM-DD-slug.md
+```
+
+Parse the last 5 entries with: `grep "^## \[" ~/knowledge/wiki/log.md | tail -5`
 
 ---
 
@@ -82,6 +143,28 @@ Every article must have a `## See Also` section at the bottom with wikilinks to 
 - Lowercase, hyphenated: `machine-learning`, `distributed-systems`, `product-design`
 - Broad concept clusters — prefer fewer, broader topics over many narrow ones
 - Each topic directory has an `index.md` summarising the topic and listing all articles in it
+
+---
+
+## Domain Topics (Agentic Development Focus)
+
+This knowledge base is focused on agentic software development. When assigning topics,
+prefer these clusters (create new subtopics as needed):
+
+```
+agentic-development/
+  agent-patterns        — types of agents, orchestration strategies, when to use subagents
+  context-management    — token budgets, context compaction, window management
+  tool-usage            — MCP tools, Bash, Claude Code capabilities and quirks
+  prompt-engineering    — system prompts, skill design, CLAUDE.md/AGENTS.md conventions
+  workflow-patterns     — automation hooks, scheduled tasks, agentic pipelines
+
+machine-learning/       — LLM internals, training, scaling, architectures
+coding-agents/          — harness architectures, agent components, coding agent research
+```
+
+Use `agentic-development/` as the default home for insights about building or using
+agentic systems, agent configurations, and Claude Code–specific knowledge.
 
 ---
 
