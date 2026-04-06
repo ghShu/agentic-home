@@ -5,13 +5,16 @@ A minimal home directory configuration for AI-assisted agentic development. Supp
 Clone this repo and run the install script to get:
 - Global coding rules agents follow in every session
 - Desktop notifications when a session finishes or waits for input (macOS and Linux)
-- Session context (date, directory, git status) printed at session start
+- Session context (date, directory, git status) printed at session start; [agentsview](https://github.com/wesm/agentsview) auto-starts so every session is indexed
 - `/resolve-conflicts` skill — guided git conflict resolution
 - `/create-pr` skill — create a PR, creating the remote repo first if needed
 - `/update-pr` skill — push commits and regenerate PR descriptions
 - A `researcher` subagent for read-only codebase exploration
 - `agent-team` script — launch a tmux agent team with one command
 - Sensible permission rules (blocks `.env`, SSH keys, credentials, etc.)
+- `kb` plugin — personal knowledge base with ingest → compile → query → lint workflow
+- `sessions` plugin — search past sessions and harvest insights into the knowledge base
+- `pr` plugin — full PR lifecycle (create, review, merge, comment, sync, and more)
 
 ## Setup
 
@@ -178,6 +181,31 @@ Workers do not need any special instructions — they self-identify and claim ta
 
 ---
 
+## Knowledge base
+
+The `kb` plugin manages a personal wiki at `~/knowledge/`. Source material lives in `raw/` and gets compiled into structured wiki articles in `wiki/` by an LLM.
+
+| Skill | Trigger | What it does |
+|-------|---------|--------------|
+| `/kb:ingest` | "ingest", "add to kb", URL | Saves source document to `~/knowledge/raw/` with front matter and downloaded images |
+| `/kb:compile` | "compile", "update wiki" | Processes `raw/` into wiki articles via the `wiki-editor` subagent |
+| `/kb:query` | "kb: \<question\>" | Answers questions grounded strictly in wiki content, with citations |
+| `/kb:lint` | "lint my kb" | Health checks → `wiki/_meta/lint-report.md` |
+| `/kb:note` | "note:", quick capture | Saves a quick note to `~/knowledge/raw/notes/` without a source URL |
+
+Conventions are documented in `~/knowledge/KNOWLEDGE.md` (seeded from `knowledge/KNOWLEDGE.md.seed`).
+
+## Session history with agentsview
+
+[agentsview](https://github.com/wesm/agentsview) auto-starts at the beginning of every Claude Code session and indexes all sessions into a local SQLite database with full-text search. Browse the UI at **http://localhost:8080** or use the `sessions` plugin skills:
+
+| Skill | Trigger | What it does |
+|-------|---------|--------------|
+| `/sessions:search` | "search sessions for X" | Searches past session history via agentsview's REST API and returns formatted results |
+| `/sessions:harvest` | "harvest sessions into kb" | Extracts insights from recent sessions and saves them as KB raw notes for compilation |
+
+`/kb:query` also cross-references session history automatically — if you ask the KB a question, it surfaces relevant past discussions alongside wiki articles.
+
 ## Customization
 
 **Edit `CLAUDE.md`** to change the global coding rules Claude follows.
@@ -211,7 +239,8 @@ agentic-home/
 │   │   └── update-pr/             # /update-pr skill
 │   ├── plugins/
 │   │   ├── pr/                    # pr:checkout, pr:create, pr:review, …
-│   │   └── kb/                    # kb:ingest, kb:compile, kb:lint, kb:query
+│   │   ├── kb/                    # kb:ingest, kb:compile, kb:lint, kb:query, kb:note
+│   │   └── sessions/              # sessions:search, sessions:harvest
 │   └── agents/
 │       └── researcher.md          # Read-only research subagent
 └── codex/

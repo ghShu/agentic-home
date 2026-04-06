@@ -42,6 +42,18 @@ The tool returns JSON: `[{"file": "...", "line": N, "snippet": "..."}]`
 
 Read the 5–15 most relevant articles. Do not read the entire wiki unless the question is very broad.
 
+### Step 3b — Cross-reference sessions (optional)
+
+If agentsview is available, search past sessions for relevant discussions:
+
+```bash
+curl -s --max-time 2 "http://localhost:8080/api/v1/search?q=KEY%20TERMS&limit=5"
+```
+
+URL-encode the key terms from the query (spaces → `%20`). If the server is unreachable or returns no results, skip this step silently.
+
+If relevant session results exist, include them in the answer as a **"Related session discussions"** section — clearly distinct from wiki content. These capture lived experience (past decisions, debugging context, prior research) that complements the formal wiki.
+
 ### Step 4 — Answer
 
 Answer the question grounded strictly in wiki content:

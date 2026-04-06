@@ -33,18 +33,28 @@ This home directory is configured using [agentic-home](https://github.com/simonw
 
 ## Knowledge Base Skills (Claude Code)
 
-Four slash commands manage the personal knowledge base at `~/knowledge/`:
+Five slash commands manage the personal knowledge base at `~/knowledge/`:
 
 | Skill | Trigger | What it does |
 |-------|---------|--------------|
-| `/knowledge-ingest` | "ingest", "add to kb", or a URL | Saves source to `raw/articles/` with front matter |
-| `/knowledge-compile` | "compile", "update wiki" | Processes `raw/` into wiki articles via `wiki-editor` subagent |
-| `/knowledge-query` | "kb: <question>" | Answers questions grounded in wiki content, with citations |
-| `/knowledge-lint` | "lint", "check my kb" | Health checks → `wiki/_meta/lint-report.md` |
+| `/kb:ingest` | "ingest", "add to kb", or a URL | Saves source to `raw/` with front matter and downloaded images |
+| `/kb:compile` | "compile", "update wiki" | Processes `raw/` into wiki articles via `wiki-editor` subagent |
+| `/kb:query` | "kb: \<question\>" | Answers questions grounded in wiki content, with citations; cross-references agentsview session history |
+| `/kb:lint` | "lint my kb", "check my kb" | Health checks → `wiki/_meta/lint-report.md` |
+| `/kb:note` | "note:", quick capture | Saves a quick note to `raw/notes/` without a source URL |
 
 The `wiki-editor` subagent (`~/.claude/agents/wiki-editor.md`) handles all writes to `wiki/`.
 The `kbsearch` CLI (`~/bin/kbsearch`) provides fast JSON-output term search over the wiki.
 Conventions are documented in `~/knowledge/KNOWLEDGE.md`.
+
+## Session History (agentsview)
+
+[agentsview](https://github.com/wesm/agentsview) auto-starts at session begin and indexes all Claude Code sessions into a local SQLite database. Browse the UI at **http://localhost:8080**.
+
+| Skill | Trigger | What it does |
+|-------|---------|--------------|
+| `/sessions:search` | "search sessions for X" | Full-text search across all past sessions via agentsview REST API |
+| `/sessions:harvest` | "harvest sessions into kb" | Extracts insights from recent sessions as KB raw notes for compilation |
 
 ## Multi-Agent Features (Claude Code)
 

@@ -92,7 +92,7 @@
     "commit-commands@claude-code-plugins": true,
     "pr@agentic-home": true,
     "kb@agentic-home": true,
-    "agentsview@agentic-home": true
+    "sessions@agentic-home": true
   },
   "alwaysThinkingEnabled": true,
   "skipDangerousModePermissionPrompt": false
