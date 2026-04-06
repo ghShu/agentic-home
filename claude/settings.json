@@ -94,6 +94,14 @@
     "kb@agentic-home": true,
     "sessions@agentic-home": true
   },
+  "extraKnownMarketplaces": {
+    "agentic-home": {
+      "source": {
+        "source": "directory",
+        "path": "/Users/focus/dev/agentic-home/claude/plugins"
+      }
+    }
+  },
   "alwaysThinkingEnabled": true,
   "skipDangerousModePermissionPrompt": false
 }
