@@ -1,15 +1,15 @@
 ---
-name: agentsview:search
+name: sessions:search
 description: Search past agent sessions for relevant discussions, decisions, and context using agentsview's full-text search.
 ---
 
-# agentsview:search
+# sessions:search
 
 Search your indexed agent session history for past work, decisions, and context.
 
 ## Trigger
 
-User says "search sessions for X", "what have I worked on re: X", "find past sessions about X", "did I work on Y before", or runs `/agentsview:search [query]`.
+User says "search sessions for X", "what have I worked on re: X", "find past sessions about X", "did I work on Y before", or runs `/sessions:search [query]`.
 
 ## Instructions
 

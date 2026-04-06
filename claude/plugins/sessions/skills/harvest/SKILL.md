@@ -1,15 +1,15 @@
 ---
-name: agentsview:harvest
+name: sessions:harvest
 description: Extract valuable insights from recent agent sessions and save them as KB raw notes for compilation into the wiki.
 ---
 
-# agentsview:harvest
+# sessions:harvest
 
 Review agent session history and extract insights worth preserving in the knowledge base — decisions made, lessons learned, techniques discovered, research conclusions.
 
 ## Trigger
 
-User says "harvest sessions into kb", "extract insights from sessions", "save session learnings to kb", "harvest today's work", or runs `/agentsview:harvest [scope]`.
+User says "harvest sessions into kb", "extract insights from sessions", "save session learnings to kb", "harvest today's work", or runs `/sessions:harvest [scope]`.
 
 ## Instructions
 

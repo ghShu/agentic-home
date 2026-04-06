@@ -13,7 +13,7 @@ Clone this repo and run the install script to get:
 - `agent-team` script — launch a tmux agent team with one command
 - Sensible permission rules (blocks `.env`, SSH keys, credentials, etc.)
 - `kb` plugin — personal knowledge base with ingest → compile → query → lint workflow
-- `agentsview` plugin — search past sessions and harvest insights into the knowledge base
+- `sessions` plugin — search past sessions and harvest insights into the knowledge base
 - `pr` plugin — full PR lifecycle (create, review, merge, comment, sync, and more)
 
 ## Setup
@@ -197,14 +197,14 @@ Conventions are documented in `~/knowledge/KNOWLEDGE.md` (seeded from `knowledge
 
 ## Session history with agentsview
 
-[agentsview](https://github.com/wesm/agentsview) auto-starts at the beginning of every Claude Code session and indexes all sessions into a local SQLite database with full-text search. Browse the UI at **http://localhost:8080** or use the `agentsview` plugin skills:
+[agentsview](https://github.com/wesm/agentsview) auto-starts at the beginning of every Claude Code session and indexes all sessions into a local SQLite database with full-text search. Browse the UI at **http://localhost:8080** or use the `sessions` plugin skills:
 
 | Skill | Trigger | What it does |
 |-------|---------|--------------|
-| `/agentsview:search` | "search sessions for X" | Searches past session history via agentsview's REST API and returns formatted results |
-| `/agentsview:harvest` | "harvest sessions into kb" | Extracts insights from recent sessions and saves them as KB raw notes for compilation |
+| `/sessions:search` | "search sessions for X" | Searches past session history via agentsview's REST API and returns formatted results |
+| `/sessions:harvest` | "harvest sessions into kb" | Extracts insights from recent sessions and saves them as KB raw notes for compilation |
 
-`/kb:query` also cross-references agentsview automatically — if you ask the KB a question, it surfaces relevant past session discussions alongside wiki articles.
+`/kb:query` also cross-references session history automatically — if you ask the KB a question, it surfaces relevant past discussions alongside wiki articles.
 
 ## Customization
 
@@ -240,7 +240,7 @@ agentic-home/
 │   ├── plugins/
 │   │   ├── pr/                    # pr:checkout, pr:create, pr:review, …
 │   │   ├── kb/                    # kb:ingest, kb:compile, kb:lint, kb:query, kb:note
-│   │   └── agentsview/            # agentsview:search, agentsview:harvest
+│   │   └── sessions/              # sessions:search, sessions:harvest
 │   └── agents/
 │       └── researcher.md          # Read-only research subagent
 └── codex/

@@ -53,8 +53,8 @@ Conventions are documented in `~/knowledge/KNOWLEDGE.md`.
 
 | Skill | Trigger | What it does |
 |-------|---------|--------------|
-| `/agentsview:search` | "search sessions for X" | Full-text search across all past sessions via agentsview REST API |
-| `/agentsview:harvest` | "harvest sessions into kb" | Extracts insights from recent sessions as KB raw notes for compilation |
+| `/sessions:search` | "search sessions for X" | Full-text search across all past sessions via agentsview REST API |
+| `/sessions:harvest` | "harvest sessions into kb" | Extracts insights from recent sessions as KB raw notes for compilation |
 
 ## Multi-Agent Features (Claude Code)
 

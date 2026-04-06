@@ -23,8 +23,8 @@
       }
     },
     {
-      "name": "agentsview",
-      "source": "./agentsview",
+      "name": "sessions",
+      "source": "./sessions",
       "description": "Browse, search, and harvest insights from agent sessions",
       "version": "1.0.0",
       "author": {
