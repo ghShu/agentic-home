@@ -34,8 +34,10 @@ gh pr view --json number,title,url,baseRefName,headRefName,state,isDraft,mergeSt
 ### Step 2 — Check CI status
 
 ```bash
-gh pr checks <ref>
+gh pr checks <ref> 2>/dev/null || true
 ```
+
+`gh pr checks` exits non-zero when no checks are configured — treat that as "no checks" and continue silently.
 
 If any checks are **failing**: warn prominently:
 ```
@@ -119,9 +121,11 @@ Note: `--auto` enables auto-merge; the PR will merge automatically once all requ
 If currently on the merged branch, switch to the base branch and pull:
 
 ```bash
-git checkout main   # or the base branch name
-git pull
+git checkout <base-branch>
+git pull origin <base-branch>
 ```
+
+Use `git pull origin <base-branch>` explicitly — `git pull` without arguments fails when the local branch has no upstream tracking set (common in worktrees).
 
 ### Step 9 — Print result
 
