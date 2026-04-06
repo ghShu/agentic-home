@@ -19,7 +19,8 @@ case "$MODE" in
     ;;
 esac
 
-# macOS notification via osascript
 if command -v osascript &>/dev/null; then
   osascript -e "display notification \"$MESSAGE\" with title \"$TITLE\" sound name \"Ping\""
+elif command -v notify-send &>/dev/null; then
+  notify-send "$TITLE" "$MESSAGE"
 fi
