@@ -34,6 +34,8 @@ if command -v agentsview &>/dev/null; then
     done
     nohup agentsview -no-browser -port "$AGENTSVIEW_PORT" >/tmp/agentsview.log 2>&1 &
     echo "agentsview started → http://localhost:${AGENTSVIEW_PORT}"
+  else
+    echo "agentsview running → http://localhost:${AGENTSVIEW_PORT}"
   fi
   echo "$AGENTSVIEW_PORT" > /tmp/agentsview.port
 fi
