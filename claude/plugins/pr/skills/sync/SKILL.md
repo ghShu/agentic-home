@@ -1,13 +1,14 @@
 ---
 name: pr:sync
-description: Commit any uncommitted changes (if present) then push and update the PR description. The single command to make your PR reflect current local state.
+description: Commit any uncommitted changes (if present) then push and open or update the PR. Works for both new and existing PRs — the single command to publish local work.
 ---
 
 # pr:sync
 
-Make the PR reflect the current local state in one step: commit any uncommitted changes, then push and refresh the PR description.
+Make the PR reflect the current local state in one step: commit any uncommitted changes, then push and open or refresh the PR.
 
-Equivalent to running `/pr:commit` (if needed) followed by `/pr:update`.
+- **Existing PR:** equivalent to `/pr:commit` (if needed) followed by `/pr:update`
+- **No PR yet:** equivalent to `/pr:commit` (if needed) followed by `/pr:create`
 
 ## Usage
 
@@ -41,18 +42,23 @@ git log origin/<branch>..HEAD --oneline
 
 **If nothing to push and no commits were just created:** stop — "Nothing to sync — PR is already up to date."
 
-### Step 3 — Run the pr:update flow
+### Step 3 — Check whether a PR exists
 
-1. Verify PR exists: `gh pr view --json number,title,url,baseRefName,state,body`
-   - If no PR: stop — "No PR found. Run `/pr:create` to open one."
-2. Push: `git push`
-3. Read all commits since base and regenerate title + description:
+```bash
+gh pr view --json number,title,url,baseRefName,state,body 2>/dev/null
+```
+
+**If a PR exists:** run the `pr:update` flow:
+1. Push: `git push`
+2. Read all commits since base and regenerate title + description:
    ```bash
    BASE=$(gh pr view --json baseRefName -q .baseRefName)
    git log ${BASE}..HEAD --oneline
    git diff ${BASE}..HEAD --stat
    ```
-4. Update PR: `gh pr edit <number> --title "<title>" --body "<body>"`
+3. Update PR: `gh pr edit <number> --title "<title>" --body "<body>"`
+
+**If no PR exists:** run the full `pr:create` flow (push + generate title/body + open PR).
 
 ### Step 4 — Print summary
 
@@ -65,6 +71,6 @@ URL: <url>
 
 ## Key Principles
 
-- **Stop at any failure** — if the commit step fails or is declined, do not push; if push fails, do not update the description
-- **Thin orchestration** — all logic lives in the underlying commit and update flows; this skill only chains them
+- **Stop at any failure** — if the commit step fails or is declined, do not push; if push fails, do not open/update the PR
+- **Thin orchestration** — all logic lives in the underlying commit, update, and create flows; this skill only chains them
 - **No-op is clean** — "Nothing to sync" is a valid, non-error outcome
