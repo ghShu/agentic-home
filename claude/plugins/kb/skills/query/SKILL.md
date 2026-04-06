@@ -83,7 +83,43 @@ title: "<title>"
 ---
 ```
 
-After saving, print the file path and suggest filing it back into the wiki with `/kb:ingest`.
+### Step 5b — Offer to file synthesis into the wiki
+
+After generating a non-trivial answer (more than 2–3 sentences, contains useful synthesis), ask the user:
+
+```
+File this answer as a wiki article? (y/n)
+Suggested location: wiki/<topic>/<concept>.md
+```
+
+If the user confirms (or explicitly asked to "file to wiki" / passes `--file-wiki`):
+- Use the **wiki-editor** subagent to write the article to `wiki/<topic>/<concept>.md`
+- Use `sources: [synthesized]` in the front matter (no raw source backing this article)
+- Add an entry in `_index.md` under `## Syntheses`
+- These articles compound knowledge the same way ingested sources do
+
+Do **not** suggest kb:ingest for these — synthesized articles go directly to wiki, skipping raw/.
+
+### Step 5c — Append to log
+
+Append an entry to `~/knowledge/wiki/log.md`:
+
+```
+## [YYYY-MM-DD] query | "Question text"
+Output: inline
+```
+
+Or, if output was saved:
+```
+## [YYYY-MM-DD] query | "Question text"
+Output: report: outputs/reports/YYYY-MM-DD-slug.md
+```
+
+Or, if filed to wiki:
+```
+## [YYYY-MM-DD] query | "Question text"
+Output: wiki: wiki/topic/concept.md
+```
 
 ## Key Rules
 

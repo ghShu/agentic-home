@@ -65,7 +65,28 @@ User says: "lint", "check my kb", "health check", "check the wiki", or runs `/kb
 - Look for pairs of articles with very similar titles or overlapping content summaries in `_index.md`
 - Flag: likely duplicates as candidates for merging (do not auto-merge)
 
-### Step 4 — Write lint report
+### Step 4 — Generate investigation suggestions
+
+Before writing the report, derive forward-looking suggestions:
+
+**Dead wikilinks → research candidates**
+- Collect all `[[topic/concept]]` patterns across wiki articles
+- Cross-reference against existing files — any link with no target is a knowledge gap
+- For each dead wikilink: suggest "Consider researching `concept` — referenced in wiki/topic/source.md"
+
+**Stubs → quick wins**
+- Articles with `status: stub` that have at least one inbound link are high-value targets
+- Suggest ingesting more sources to fill them out
+
+**Domain gaps**
+- Read `KNOWLEDGE.md` "Domain Topics" section — compare expected topic clusters against what exists in `wiki/`
+- Flag expected topics that have no articles yet
+
+**Unresolved curated references → ready-to-run commands**
+- For each curated reference not yet ingested, generate a ready-to-run command:
+  `/kb:ingest <url>  # "<title>" — curated in raw/articles/slug.md`
+
+### Step 4b — Write lint report
 
 Write to `~/knowledge/wiki/_meta/lint-report.md`:
 
@@ -124,9 +145,33 @@ issues_found: M
 
 ### Articles with no See Also section
 - wiki/topic/concept.md
+
+## Suggested Next Actions
+### Research candidates (dead wikilinks)
+- `concept-name` — referenced in wiki/topic/article.md but has no article yet
+  → /kb:ingest <search-query or URL if known>
+
+### Sources to ingest (unresolved curated references)
+- /kb:ingest https://example.com/paper  # "Paper Title" — curated in raw/articles/YYYY-MM-DD-slug.md
+
+### Domain gaps (expected topics with no articles)
+- `agentic-development/context-management` — expected per domain schema, no articles yet
+  → ingest sources or run /kb:note to capture what you know
+
+### Stubs worth expanding
+- wiki/topic/concept.md — has N inbound links, worth fleshing out
 ```
 
-### Step 5 — Print summary
+### Step 5 — Append to log
+
+Append an entry to `~/knowledge/wiki/log.md`:
+
+```
+## [YYYY-MM-DD] lint | N articles, X critical, Y warnings
+Report: wiki/_meta/lint-report.md
+```
+
+### Step 6 — Print summary
 
 Print a short summary to the user:
 ```
@@ -134,6 +179,7 @@ Wiki lint complete.
   Articles checked: N
   Critical issues: X
   Warnings: Y
+  Suggested actions: Z
 
 Full report: ~/knowledge/wiki/_meta/lint-report.md
 ```

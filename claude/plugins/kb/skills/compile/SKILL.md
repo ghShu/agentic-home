@@ -82,7 +82,17 @@ status: compiled
 
 Use Edit to change only the `status:` line — do not modify the content.
 
-### Step 6 — Print summary
+### Step 6 — Append to log
+
+Append an entry to `~/knowledge/wiki/log.md`. If the file does not exist yet, create it with a header first (see KNOWLEDGE.md for format). Append at the end:
+
+```
+## [YYYY-MM-DD] compile | N docs processed
+  - raw/articles/YYYY-MM-DD-slug.md → wiki/topic/concept.md (new)
+  - raw/articles/YYYY-MM-DD-slug2.md → wiki/topic/concept2.md (updated)
+```
+
+### Step 7 — Print summary
 
 ```
 Compiled N document(s):
