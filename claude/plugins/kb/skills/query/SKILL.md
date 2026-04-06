@@ -47,7 +47,8 @@ Read the 5–15 most relevant articles. Do not read the entire wiki unless the q
 If agentsview is available, search past sessions for relevant discussions:
 
 ```bash
-curl -s --max-time 2 "http://localhost:8080/api/v1/search?q=KEY%20TERMS&limit=5"
+AGENTSVIEW_PORT=$(cat /tmp/agentsview.port 2>/dev/null || echo "8080")
+curl -s --max-time 2 "http://localhost:${AGENTSVIEW_PORT}/api/v1/search?q=KEY%20TERMS&limit=5"
 ```
 
 URL-encode the key terms from the query (spaces → `%20`). If the server is unreachable or returns no results, skip this step silently.

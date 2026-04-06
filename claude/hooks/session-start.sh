@@ -14,10 +14,26 @@ fi
 
 echo "===================="
 
-# Ensure agentsview is running
+# Ensure agentsview is running, persisting the port to /tmp/agentsview.port
 if command -v agentsview &>/dev/null; then
-  if ! curl -s --max-time 1 http://localhost:8080/api/v1/version >/dev/null 2>&1; then
-    nohup agentsview -no-browser >/tmp/agentsview.log 2>&1 &
-    echo "agentsview started → http://localhost:8080"
+  AGENTSVIEW_PORT=""
+  # Check if already running on any port in range 8080-8099
+  for _port in $(seq 8080 8099); do
+    if curl -s --max-time 1 "http://localhost:${_port}/api/v1/version" >/dev/null 2>&1; then
+      AGENTSVIEW_PORT=$_port
+      break
+    fi
+  done
+  if [ -z "$AGENTSVIEW_PORT" ]; then
+    # Find first free port in range
+    for _port in $(seq 8080 8099); do
+      if ! nc -z localhost "$_port" 2>/dev/null; then
+        AGENTSVIEW_PORT=$_port
+        break
+      fi
+    done
+    nohup agentsview -no-browser -port "$AGENTSVIEW_PORT" >/tmp/agentsview.log 2>&1 &
+    echo "agentsview started → http://localhost:${AGENTSVIEW_PORT}"
   fi
+  echo "$AGENTSVIEW_PORT" > /tmp/agentsview.port
 fi

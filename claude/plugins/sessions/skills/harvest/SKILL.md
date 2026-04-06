@@ -15,9 +15,14 @@ User says "harvest sessions into kb", "extract insights from sessions", "save se
 
 ### Step 1 — Check availability
 
+Read the port agentsview is running on:
+```bash
+AGENTSVIEW_PORT=$(cat /tmp/agentsview.port 2>/dev/null || echo "8080")
+```
+
 Verify agentsview is running:
 ```bash
-curl -s --max-time 2 http://localhost:8080/api/v1/version
+curl -s --max-time 2 "http://localhost:${AGENTSVIEW_PORT}/api/v1/version"
 ```
 
 If unavailable, tell the user and stop.
@@ -32,20 +37,20 @@ Identify what sessions to harvest from the user's message:
 
 **For recency-based scope:**
 ```bash
-curl -s "http://localhost:8080/api/v1/sessions?limit=20"
+curl -s "http://localhost:${AGENTSVIEW_PORT}/api/v1/sessions?limit=20"
 ```
 Filter results to the relevant time window based on `started_at`.
 
 **For topic-based scope:**
 ```bash
-curl -s "http://localhost:8080/api/v1/search?q=TOPIC&limit=20&sort=recency"
+curl -s "http://localhost:${AGENTSVIEW_PORT}/api/v1/search?q=TOPIC&limit=20&sort=recency"
 ```
 
 ### Step 3 — Read session messages
 
 For each candidate session (up to 10 to avoid overload), fetch its messages:
 ```bash
-curl -s "http://localhost:8080/api/v1/sessions/SESSION_ID/messages?limit=200"
+curl -s "http://localhost:${AGENTSVIEW_PORT}/api/v1/sessions/SESSION_ID/messages?limit=200"
 ```
 
 The response contains messages with `role` (user/assistant), `content`, and tool call summaries.
