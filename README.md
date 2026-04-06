@@ -4,7 +4,7 @@ A minimal home directory configuration for AI-assisted agentic development. Supp
 
 Clone this repo and run the install script to get:
 - Global coding rules agents follow in every session
-- macOS notifications when a session finishes or waits for input
+- Desktop notifications when a session finishes or waits for input (macOS and Linux)
 - Session context (date, directory, git status) printed at session start
 - `/resolve-conflicts` skill — guided git conflict resolution
 - `/create-pr` skill — create a PR, creating the remote repo first if needed
@@ -15,10 +15,16 @@ Clone this repo and run the install script to get:
 
 ## Setup
 
-**1. Trigger Xcode CLT installation** (required on any Mac — a popup will appear):
+**1. Install prerequisites**
 
+**macOS** — trigger Xcode Command Line Tools installation (a popup will appear):
 ```bash
 xcode-select --install
+```
+
+**Linux (Ubuntu/Debian)** — ensure curl and git are available:
+```bash
+sudo apt-get install -y curl git
 ```
 
 **2. Create API key files** so credentials are ready when needed:
@@ -37,11 +43,11 @@ curl -fsSL https://raw.githubusercontent.com/ghShu/agentic-home/main/agentic-dev
 The script opens with a prompt:
 
 ```
-Fresh Mac? Run full setup (Homebrew, terminal, dev tools, macOS defaults) [Y/N]
+Fresh install? Run full setup (package manager, terminal, dev tools, shell config) [Y/N]
 ```
 
-- **Y** — installs everything from scratch: Homebrew, Ghostty, oh-my-zsh, Starship, dev tools, Git config, macOS defaults, Node, Claude Code, then clones this repo and runs `install.sh`.
-- **N** — skips straight to Node → Claude Code → clone + `install.sh`. Use this on an existing Mac that already has the basics.
+- **Y** — installs everything from scratch: package manager (Homebrew on macOS, apt/dnf/pacman on Linux), terminal (Ghostty on macOS), oh-my-zsh, Starship, dev tools, Git config, macOS system defaults (macOS only), Node, Claude Code, then clones this repo and runs `install.sh`.
+- **N** — skips straight to Node → Claude Code → clone + `install.sh`. Use this on an existing system that already has the basics.
 
 If the script is interrupted, resume from any step:
 
@@ -80,7 +86,7 @@ Because all config files are symlinked, updates take effect immediately — no r
 | `AGENTS.md` | `~/AGENTS.md` | Cross-agent context file ([agents.md spec](https://agents.md/)) |
 | `claude/settings.json` | `~/.claude/settings.json` | Claude Code config: permissions, hooks, features ([docs](https://docs.anthropic.com/en/docs/claude-code/settings)) |
 | `claude/hooks/session-start.sh` | `~/.claude/hooks/` | Prints context at session start ([hooks docs](https://docs.anthropic.com/en/docs/claude-code/hooks)) |
-| `claude/hooks/notify.sh` | `~/.claude/hooks/` | macOS notification on stop/idle |
+| `claude/hooks/notify.sh` | `~/.claude/hooks/` | Desktop notification on stop/idle (macOS via osascript, Linux via notify-send) |
 | `claude/skills/resolve-conflicts/` | `~/.claude/skills/` | `/resolve-conflicts` slash command ([skills docs](https://docs.anthropic.com/en/docs/claude-code/skills)) |
 | `claude/skills/create-pr/` | `~/.claude/skills/` | `/create-pr` slash command — create PR, creating remote repo first if needed |
 | `claude/skills/update-pr/` | `~/.claude/skills/` | `/update-pr` slash command — push commits and regenerate PR description |
@@ -143,7 +149,7 @@ The session layout looks like this (tiled, 3 workers shown):
 
 Use `Ctrl-b` then arrow keys to move between panes. Quit with `Ctrl-b d` to detach (sessions persist) or close all panes to end the session.
 
-If tmux isn't installed: `brew install tmux`
+If tmux isn't installed: `brew install tmux` (macOS) or `sudo apt-get install tmux` (Ubuntu/Debian)
 
 ---
 
@@ -188,7 +194,7 @@ Workers do not need any special instructions — they self-identify and claim ta
 
 ```
 agentic-home/
-├── agentic-dev-setup.sh                   # Fresh Mac bootstrap (Homebrew → Claude Code → install.sh)
+├── agentic-dev-setup.sh                   # Bootstrap script: macOS + Linux (package manager → Claude Code → install.sh)
 ├── install.sh                     # Symlink config into ~/.claude/, ~/bin/, etc.
 ├── CLAUDE.md                      # Global Claude Code instructions
 ├── AGENTS.md                      # Cross-agent home directory guide
@@ -198,7 +204,7 @@ agentic-home/
 │   ├── settings.json              # Claude Code configuration
 │   ├── hooks/
 │   │   ├── session-start.sh       # Session context printer
-│   │   └── notify.sh              # macOS notification hook
+│   │   └── notify.sh              # Desktop notification hook (macOS + Linux)
 │   ├── skills/
 │   │   ├── resolve-conflicts/     # /resolve-conflicts skill
 │   │   ├── create-pr/             # /create-pr skill
