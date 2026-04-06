@@ -104,28 +104,44 @@ Default is **NO**. Only proceed on explicit `y` / `yes`.
 
 ### Step 7 — Merge
 
-```bash
-gh pr merge <ref> --squash [--delete-branch]
-# or --merge / --rebase
-```
-
 If `mergeStateStatus` is `BLOCKED` and requires a merge queue:
 ```bash
 gh pr merge <ref> --squash --auto
 ```
+Note: `--auto` enables auto-merge; the PR will merge automatically once all requirements are met. Stop here — post-merge cleanup will happen when the queue processes the PR.
 
-Note: `--auto` enables auto-merge; the PR will merge automatically once all requirements are met.
+Otherwise, use the GitHub API directly — **do not use `gh pr merge`**. `gh pr merge` attempts a local `git checkout` after merging, which fails when the base branch is already checked out in another worktree. This applies to any worktree setup (`claude --worktree`, `git worktree add`, etc.) — the locking is enforced by git, not by the tool that created the worktree.
+
+```bash
+OWNER=$(gh repo view --json owner -q .owner.login)
+REPO=$(gh repo view --json name -q .name)
+
+# Merge
+gh api repos/${OWNER}/${REPO}/pulls/<number>/merge \
+  --method PUT \
+  --field merge_method=squash \
+  --field commit_title="<PR title> (#<number>)"
+
+# Delete remote branch (if requested)
+gh api repos/${OWNER}/${REPO}/git/refs/heads/<head-branch> --method DELETE
+```
+
+Map strategy argument to `merge_method`: `squash` → `squash`, `merge` → `merge`, `rebase` → `rebase`.
 
 ### Step 8 — Post-merge cleanup
 
-If currently on the merged branch, switch to the base branch and pull:
+Fast-forward the local base branch without checking it out:
 
 ```bash
-git checkout <base-branch>
-git pull origin <base-branch>
+git fetch origin <base-branch>:<base-branch>
 ```
 
-Use `git pull origin <base-branch>` explicitly — `git pull` without arguments fails when the local branch has no upstream tracking set (common in worktrees).
+This updates the local base branch ref directly regardless of which branch is currently checked out, and works correctly in worktrees where the base branch may be locked by another worktree.
+
+If currently on the merged head branch and the base branch is NOT locked by another worktree, optionally switch:
+```bash
+git checkout <base-branch>
+```
 
 ### Step 9 — Print result
 
@@ -142,3 +158,4 @@ Use `git pull origin <base-branch>` explicitly — `git pull` without arguments 
 - **Default squash** — keeps base branch history clean for feature branches
 - **Switch off the merged branch** — always land on the base branch after merging to avoid confusion
 - **`--auto` for merge queues** — detect `BLOCKED` state and use auto-merge rather than failing
+- **API over `gh pr merge`** — `gh pr merge` runs local git operations after merging that break in worktree setups; use the GitHub API directly instead
