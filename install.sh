@@ -163,6 +163,19 @@ mkdir -p "$KB/outputs/reports" "$KB/outputs/slides"
 [ ! -f "$KB/KNOWLEDGE.md" ] && cp "$REPO_DIR/knowledge/KNOWLEDGE.md.seed" "$KB/KNOWLEDGE.md" && ok "Seeded ~/knowledge/KNOWLEDGE.md"
 [ ! -f "$KB/wiki/_index.md" ] && cp "$REPO_DIR/knowledge/wiki-index.md.seed" "$KB/wiki/_index.md" && ok "Seeded ~/knowledge/wiki/_index.md"
 
+# --- agentsview ---
+log "Checking agentsview..."
+if command -v agentsview &>/dev/null; then
+  ok "agentsview already installed"
+else
+  log "Installing agentsview..."
+  if curl -fsSL https://agentsview.io/install.sh | bash; then
+    ok "agentsview installed"
+  else
+    warn "agentsview install failed — install manually: https://github.com/wesm/agentsview"
+  fi
+fi
+
 # --- Summary ---
 echo ""
 echo "Done."

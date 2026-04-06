@@ -21,6 +21,15 @@
       "author": {
         "name": "agentic-home"
       }
+    },
+    {
+      "name": "agentsview",
+      "source": "./agentsview",
+      "description": "Browse, search, and harvest insights from agent sessions",
+      "version": "1.0.0",
+      "author": {
+        "name": "agentic-home"
+      }
     }
   ]
 }
