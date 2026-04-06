@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# agentic-dev-setup.sh — Personal MacBook Pro setup script
+# agentic-dev-setup.sh — Agentic development environment setup (macOS + Linux)
 # Usage:
 #   ./agentic-dev-setup.sh              # run all steps
 #   ./agentic-dev-setup.sh --from STEP  # resume from a specific step
@@ -9,12 +9,16 @@ VERSION=1.0.0
 
 set -euo pipefail
 
-# Require an interactive terminal — Homebrew and sudo need one
-if [ ! -t 0 ]; then
-  echo "ERROR: This script must be run in an interactive terminal."
-  echo "Open Terminal.app and run:  ~/agentic-dev-setup.sh"
-  exit 1
-fi
+# Allow --help and --version without an interactive terminal
+case "${1:-}" in
+  --help|-h|--version|-v) ;;
+  *)
+    if [ ! -t 0 ]; then
+      echo "ERROR: This script must be run in an interactive terminal."
+      exit 1
+    fi
+    ;;
+esac
 
 # ─── Colors & Logging ─────────────────────────────────────────────────────────
 GREEN='\033[0;32m'
@@ -84,21 +88,76 @@ _load_brew() {
   fi
 }
 
+# Source nvm from Homebrew (macOS) or standard install dir (Linux)
+_load_nvm() {
+  export NVM_DIR="$HOME/.nvm"
+  local _nvm_sh
+  for _nvm_sh in "/opt/homebrew/opt/nvm/nvm.sh" "$NVM_DIR/nvm.sh"; do
+    [ -s "$_nvm_sh" ] && { source "$_nvm_sh"; return 0; }
+  done
+}
+
+# ─── OS / Distro Detection ────────────────────────────────────────────────────
+OS="$(uname -s)"   # Darwin or Linux
+
+PKG_MANAGER=""
+if [ "$OS" = "Linux" ]; then
+  if   _command_exists apt-get; then PKG_MANAGER="apt"
+  elif _command_exists dnf;     then PKG_MANAGER="dnf"
+  elif _command_exists yum;     then PKG_MANAGER="yum"
+  elif _command_exists pacman;  then PKG_MANAGER="pacman"
+  else
+    echo_w "No supported package manager found (apt/dnf/yum/pacman). Some steps may be skipped."
+    PKG_MANAGER="unknown"
+  fi
+fi
+
+# Install a package using the platform's package manager
+install_pkg() {
+  local pkg="$1"
+  if [ "$OS" = "Darwin" ]; then
+    _brew_installed "$pkg" && return 0
+    brew install "$pkg" >> "$OUTPUT_FILE" 2>&1
+  elif [ "$PKG_MANAGER" = "apt" ]; then
+    sudo apt-get install -y "$pkg" >> "$OUTPUT_FILE" 2>&1
+  elif [ "$PKG_MANAGER" = "dnf" ] || [ "$PKG_MANAGER" = "yum" ]; then
+    sudo "$PKG_MANAGER" install -y "$pkg" >> "$OUTPUT_FILE" 2>&1
+  elif [ "$PKG_MANAGER" = "pacman" ]; then
+    sudo pacman -S --noconfirm "$pkg" >> "$OUTPUT_FILE" 2>&1
+  else
+    echo_w "No supported package manager — skipping $pkg"
+  fi
+}
+
 # ─── Steps ────────────────────────────────────────────────────────────────────
 
 check_prereqs() {
   echo_t "Checking prerequisites"
 
-  echo_i "Checking Xcode Command Line Tools..."
-  if xcode-select -p &>/dev/null; then
-    echo_i "Xcode CLT already installed — skipping"
+  if [ "$OS" = "Darwin" ]; then
+    echo_i "Checking Xcode Command Line Tools..."
+    if xcode-select -p &>/dev/null; then
+      echo_i "Xcode CLT already installed — skipping"
+    else
+      echo_i "Installing Xcode Command Line Tools (a popup may appear)..."
+      xcode-select --install 2>/dev/null || true
+      echo_ask "Press ENTER once the Xcode CLT installation popup has completed."
+      read -r
+      _ensure_sudo
+      sudo xcodebuild -license accept >> "$OUTPUT_FILE" 2>&1 || true
+    fi
   else
-    echo_i "Installing Xcode Command Line Tools (a popup may appear)..."
-    xcode-select --install 2>/dev/null || true
-    echo_ask "Press ENTER once the Xcode CLT installation popup has completed."
-    read -r
+    echo_i "Ensuring build essentials are installed..."
     _ensure_sudo
-    sudo xcodebuild -license accept >> "$OUTPUT_FILE" 2>&1 || true
+    if [ "$PKG_MANAGER" = "apt" ]; then
+      sudo apt-get update -qq >> "$OUTPUT_FILE" 2>&1
+      sudo apt-get install -y curl git build-essential >> "$OUTPUT_FILE" 2>&1
+    elif [ "$PKG_MANAGER" = "pacman" ]; then
+      sudo pacman -Sy --noconfirm base-devel git curl >> "$OUTPUT_FILE" 2>&1
+    elif [ "$PKG_MANAGER" = "dnf" ] || [ "$PKG_MANAGER" = "yum" ]; then
+      sudo "$PKG_MANAGER" groupinstall -y "Development Tools" >> "$OUTPUT_FILE" 2>&1
+      sudo "$PKG_MANAGER" install -y curl git >> "$OUTPUT_FILE" 2>&1
+    fi
   fi
 
   mkdir -p ~/.ssh
@@ -128,52 +187,103 @@ fix_ssh_permissions() {
   ssh -T gshu 2>&1 | head -2 || true
 }
 
-setup_homebrew() {
-  echo_t "Setting up Homebrew"
+setup_package_manager() {
+  if [ "$OS" = "Darwin" ]; then
+    echo_t "Setting up Homebrew"
 
-  _load_brew
-  if _command_exists brew; then
-    echo_i "Homebrew already installed — updating..."
-    brew update >> "$OUTPUT_FILE" 2>&1
-  else
-    echo_i "Installing Homebrew..."
-    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     _load_brew
-    if ! _command_exists brew; then
-      echo_e "Homebrew installation failed — check output above"
-      exit 1
+    if _command_exists brew; then
+      echo_i "Homebrew already installed — updating..."
+      brew update >> "$OUTPUT_FILE" 2>&1
+    else
+      echo_i "Installing Homebrew..."
+      /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+      _load_brew
+      if ! _command_exists brew; then
+        echo_e "Homebrew installation failed — check output above"
+        exit 1
+      fi
+    fi
+
+    echo_i "Running brew doctor..."
+    if ! brew doctor >> "$OUTPUT_FILE" 2>&1; then
+      echo_w "brew doctor reported warnings — check $OUTPUT_FILE for details"
+    fi
+
+    # Fix zsh compinit insecure directories warning
+    if [ -d /opt/homebrew/share ]; then
+      chmod -R go-w /opt/homebrew/share 2>/dev/null || true
+    fi
+
+    echo_i "Homebrew ready"
+  else
+    echo_t "Updating package manager ($PKG_MANAGER)"
+    _ensure_sudo
+    if [ "$PKG_MANAGER" = "apt" ]; then
+      sudo apt-get update -qq >> "$OUTPUT_FILE" 2>&1
+      echo_i "apt updated"
+    elif [ "$PKG_MANAGER" = "dnf" ] || [ "$PKG_MANAGER" = "yum" ]; then
+      sudo "$PKG_MANAGER" check-update >> "$OUTPUT_FILE" 2>&1 || true  # exits 100 when updates are available — not an error
+      echo_i "$PKG_MANAGER updated"
+    elif [ "$PKG_MANAGER" = "pacman" ]; then
+      sudo pacman -Sy >> "$OUTPUT_FILE" 2>&1
+      echo_i "pacman synced"
+    else
+      echo_w "Unknown package manager — skipping update"
     fi
   fi
-
-  echo_i "Running brew doctor..."
-  if ! brew doctor >> "$OUTPUT_FILE" 2>&1; then
-    echo_w "brew doctor reported warnings — check $OUTPUT_FILE for details"
-  fi
-
-  # Fix zsh compinit insecure directories warning
-  if [ -d /opt/homebrew/share ]; then
-    chmod -R go-w /opt/homebrew/share 2>/dev/null || true
-  fi
-
-  echo_i "Homebrew ready"
 }
 
-install_ghostty() {
-  echo_t "Installing Ghostty terminal"
-  _load_brew
+_configure_linux_terminal_font() {
+  local font="JetBrainsMono Nerd Font Mono"
+  local font_size=12
 
-  if _brew_cask_installed ghostty; then
-    echo_i "Ghostty already installed — skipping"
-    return 0
+  # Priority 1: GNOME (Ubuntu default — gnome-terminal uses system monospace font)
+  if _command_exists gsettings; then
+    gsettings set org.gnome.desktop.interface monospace-font-name "$font $font_size"
+    echo_i "Set monospace font via gsettings (gnome-terminal will pick this up)"
+
+  # Priority 2: kitty
+  elif [ -d "$HOME/.config/kitty" ] || _command_exists kitty; then
+    local conf="$HOME/.config/kitty/kitty.conf"
+    if ! grep -q "font_family" "$conf" 2>/dev/null; then
+      echo "font_family $font" >> "$conf"
+      echo_i "Added font_family to ~/.config/kitty/kitty.conf"
+    else
+      echo_i "kitty font_family already set — skipping"
+    fi
+
+  # Priority 3: alacritty
+  elif [ -d "$HOME/.config/alacritty" ]; then
+    local conf="$HOME/.config/alacritty/alacritty.toml"
+    if [ ! -f "$conf" ] || ! grep -q "\[font\]" "$conf" 2>/dev/null; then
+      printf '\n[font]\n[font.normal]\nfamily = "%s"\n' "$font" >> "$conf"
+      echo_i "Added font config to ~/.config/alacritty/alacritty.toml"
+    else
+      echo_i "alacritty font already configured — skipping"
+    fi
+
+  else
+    echo_ask "Set your terminal font to '$font' for Starship glyphs to render correctly."
   fi
+}
 
-  brew install --cask ghostty >> "$OUTPUT_FILE" 2>&1
-  echo_i "Ghostty installed"
+install_terminal() {
+  if [ "$OS" = "Darwin" ]; then
+    echo_t "Installing Ghostty terminal"
+    _load_brew
 
-  # Write a minimal sensible config
-  mkdir -p ~/.config/ghostty
-  if [ ! -f ~/.config/ghostty/config ]; then
-    cat > ~/.config/ghostty/config << 'EOF'
+    if _brew_cask_installed ghostty; then
+      echo_i "Ghostty already installed — skipping"
+      return 0
+    fi
+
+    brew install --cask ghostty >> "$OUTPUT_FILE" 2>&1
+    echo_i "Ghostty installed"
+
+    mkdir -p ~/.config/ghostty
+    if [ ! -f ~/.config/ghostty/config ]; then
+      cat > ~/.config/ghostty/config << 'EOF'
 # Ghostty config — edit as needed
 font-family = "JetBrains Mono"
 font-size = 14
@@ -184,25 +294,42 @@ window-padding-y = 6
 shell-integration = zsh
 copy-on-select = true
 EOF
-    echo_i "Wrote default Ghostty config to ~/.config/ghostty/config"
+      echo_i "Wrote default Ghostty config to ~/.config/ghostty/config"
+    else
+      echo_i "Ghostty config already exists — skipping"
+    fi
   else
-    echo_i "Ghostty config already exists — skipping"
+    echo_t "Configuring terminal font (Linux)"
+    _configure_linux_terminal_font
   fi
 }
 
 install_nerd_font() {
   echo_t "Installing JetBrains Mono Nerd Font (for Starship glyphs)"
-  _load_brew
 
-  if [ -f ~/Library/Fonts/JetBrainsMonoNerdFont-Regular.ttf ] || \
-     ls ~/Library/Fonts/JetBrainsMono* >/dev/null 2>&1; then
-    echo_i "JetBrains Mono already installed — skipping"
-    return 0
+  if [ "$OS" = "Darwin" ]; then
+    _load_brew
+    if ls ~/Library/Fonts/JetBrainsMono* >/dev/null 2>&1; then
+      echo_i "JetBrains Mono already installed — skipping"
+      return 0
+    fi
+    brew install --cask font-jetbrains-mono-nerd-font >> "$OUTPUT_FILE" 2>&1
+    echo_i "JetBrains Mono Nerd Font installed"
+    echo_ask "Set the font in Ghostty config: font-family = \"JetBrainsMono Nerd Font\""
+  else
+    local font_dir="$HOME/.local/share/fonts"
+    if ls "$font_dir"/JetBrainsMono* >/dev/null 2>&1; then
+      echo_i "JetBrains Mono already installed — skipping"
+      return 0
+    fi
+    mkdir -p "$font_dir"
+    echo_i "Downloading JetBrains Mono Nerd Font..."
+    curl -fLo "$font_dir/JetBrainsMonoNerdFontMono-Regular.ttf" \
+      "https://github.com/ryanoasis/nerd-fonts/raw/HEAD/patched-fonts/JetBrainsMono/Ligatures/Regular/JetBrainsMonoNerdFontMono-Regular.ttf" \
+      >> "$OUTPUT_FILE" 2>&1
+    fc-cache -fv >> "$OUTPUT_FILE" 2>&1
+    echo_i "JetBrains Mono Nerd Font installed to $font_dir"
   fi
-
-  brew install --cask font-jetbrains-mono-nerd-font >> "$OUTPUT_FILE" 2>&1
-  echo_i "JetBrains Mono Nerd Font installed"
-  echo_ask "Set the font in Ghostty config: font-family = \"JetBrainsMono Nerd Font\""
 }
 
 setup_shell() {
@@ -224,7 +351,13 @@ setup_shell() {
     echo_i "Starship already installed — skipping"
   else
     echo_i "Installing Starship..."
-    brew install starship >> "$OUTPUT_FILE" 2>&1
+    if [ "$OS" = "Darwin" ]; then
+      _load_brew
+      brew install starship >> "$OUTPUT_FILE" 2>&1
+    else
+      # Official install script works on all Linux distros
+      curl -sS https://starship.rs/install.sh | sh -s -- --yes >> "$OUTPUT_FILE" 2>&1
+    fi
     echo_i "Starship installed"
   fi
 
@@ -255,8 +388,8 @@ write_zshrc() {
   if [ -f ~/.zshrc ]; then
     echo_w "~/.zshrc already exists — skipping to preserve your customizations."
     echo_w "Ensure the following are present in your ~/.zshrc:"
-    echo_w "  \$HOME/bin and /opt/homebrew/bin in PATH"
-    echo_w "  nvm sourced: [ -s \"/opt/homebrew/opt/nvm/nvm.sh\" ] && source ..."
+    echo_w "  \$HOME/bin and \$HOME/.local/bin in PATH"
+    echo_w "  nvm sourced from \$NVM_DIR/nvm.sh or Homebrew path"
     echo_w "  Starship init: eval \"\$(starship init zsh)\""
     echo_w "  Credentials: source ~/.anthropic.env and ~/.github.env if they exist"
     return 0
@@ -266,7 +399,10 @@ write_zshrc() {
 # ~/.zshrc
 
 # ─── PATH ─────────────────────────────────────────────────────────────────────
-export PATH="$HOME/bin:$HOME/.local/bin:/usr/local/bin:/opt/homebrew/bin:/opt/homebrew/sbin:$PATH"
+export PATH="$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH"
+# Homebrew (macOS) — sets HOMEBREW_PREFIX, HOMEBREW_CELLAR, and adds brew to PATH
+[ -f /opt/homebrew/bin/brew ] && eval "$(/opt/homebrew/bin/brew shellenv)"
+[ -f /usr/local/bin/brew ]    && eval "$(/usr/local/bin/brew shellenv)"
 
 # ─── oh-my-zsh ────────────────────────────────────────────────────────────────
 export ZSH="$HOME/.oh-my-zsh"
@@ -279,15 +415,13 @@ eval "$(starship init zsh)"
 
 # ─── NVM (Node Version Manager) ───────────────────────────────────────────────
 export NVM_DIR="$HOME/.nvm"
-[ -s "/opt/homebrew/opt/nvm/nvm.sh" ]             && source "/opt/homebrew/opt/nvm/nvm.sh"
-[ -s "/opt/homebrew/opt/nvm/etc/bash_completion" ] && source "/opt/homebrew/opt/nvm/etc/bash_completion"
+for _nvm_sh in "/opt/homebrew/opt/nvm/nvm.sh" "$NVM_DIR/nvm.sh"; do
+  [ -s "$_nvm_sh" ] && { source "$_nvm_sh"; break; }
+done
+unset _nvm_sh
 
 # ─── uv (Python) ──────────────────────────────────────────────────────────────
 [ -f "$HOME/.local/bin/uv" ] && eval "$(uv generate-shell-completion zsh 2>/dev/null)"
-
-# ─── M1 gRPC build flags ──────────────────────────────────────────────────────
-export GRPC_PYTHON_BUILD_SYSTEM_OPENSSL=1
-export GRPC_PYTHON_BUILD_SYSTEM_ZLIB=1
 
 # ─── Private credentials (never commit these files) ───────────────────────────
 # Store tokens in separate env files:
@@ -304,32 +438,76 @@ ZSHRC
 
 install_dev_tools() {
   echo_t "Installing developer tools"
-  _load_brew
 
-  local tools=(git gh jq wget tree bat fd ripgrep fzf)
+  if [ "$OS" = "Darwin" ]; then
+    _load_brew
+  fi
+
+  # Tools where binary name == package name on all platforms
+  local tools=(git gh jq wget tree ripgrep fzf)
   for tool in "${tools[@]}"; do
-    if _brew_installed "$tool"; then
+    if _command_exists "$tool"; then
       echo_i "$tool already installed — skipping"
     else
       echo_i "Installing $tool..."
-      brew install "$tool" >> "$OUTPUT_FILE" 2>&1
+      install_pkg "$tool"
     fi
   done
 
-  # NVM via Homebrew
-  if _brew_installed nvm; then
+  # bat: packaged as 'batcat' on Ubuntu/Debian, 'bat' everywhere else
+  if _command_exists bat; then
+    echo_i "bat already installed — skipping"
+  elif _command_exists batcat; then
+    echo_i "bat already installed as batcat — skipping"
+  else
+    echo_i "Installing bat..."
+    if [ "$PKG_MANAGER" = "apt" ]; then
+      sudo apt-get install -y bat >> "$OUTPUT_FILE" 2>&1
+      mkdir -p "$HOME/.local/bin"
+      ln -sf "$(command -v batcat)" "$HOME/.local/bin/bat"
+    else
+      install_pkg bat
+    fi
+  fi
+
+  # fd: packaged as 'fd-find' on Ubuntu/Debian, binary is 'fdfind'
+  if _command_exists fd; then
+    echo_i "fd already installed — skipping"
+  elif _command_exists fdfind; then
+    echo_i "fd already installed as fdfind — skipping"
+  else
+    echo_i "Installing fd..."
+    if [ "$PKG_MANAGER" = "apt" ]; then
+      sudo apt-get install -y fd-find >> "$OUTPUT_FILE" 2>&1
+      mkdir -p "$HOME/.local/bin"
+      ln -sf "$(command -v fdfind)" "$HOME/.local/bin/fd"
+    else
+      install_pkg fd
+    fi
+  fi
+
+  # NVM — Homebrew on macOS, official install script on Linux
+  if _command_exists nvm || [ -s "$HOME/.nvm/nvm.sh" ]; then
     echo_i "nvm already installed"
   else
     echo_i "Installing nvm..."
-    brew install nvm >> "$OUTPUT_FILE" 2>&1
+    if [ "$OS" = "Darwin" ]; then
+      brew install nvm >> "$OUTPUT_FILE" 2>&1
+    else
+      curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash >> "$OUTPUT_FILE" 2>&1  # pin: update periodically
+    fi
   fi
 
-  # uv (Python package manager)
+  # uv (Python package manager) — installer script works on both platforms
   if _command_exists uv; then
     echo_i "uv already installed"
   else
     echo_i "Installing uv..."
-    brew install uv >> "$OUTPUT_FILE" 2>&1
+    if [ "$OS" = "Darwin" ]; then
+      brew install uv >> "$OUTPUT_FILE" 2>&1
+    else
+      curl -LsSf https://astral.sh/uv/install.sh | sh >> "$OUTPUT_FILE" 2>&1
+    fi
   fi
 
   echo_i "Dev tools installed"
@@ -356,14 +534,20 @@ configure_git() {
   git config --global pull.rebase         false
   git config --global merge.stat          true
   git config --global core.whitespace     trailing-space,space-before-tab
-  git config --global credential.helper   osxkeychain
   git config --global init.defaultBranch  main
   git config --global feature.manyFiles   1        # faster in large repos
+
+  if [ "$OS" = "Darwin" ]; then
+    git config --global credential.helper osxkeychain
+  else
+    git config --global credential.helper cache
+  fi
 
   echo_i "Git configured for: $git_name <$git_email>"
 }
 
 setup_mac_defaults() {
+  [ "$OS" != "Darwin" ] && { echo_i "Skipping macOS defaults (not macOS)"; return 0; }
   echo_t "Applying sensible macOS defaults"
 
   # Finder: show hidden files
@@ -399,8 +583,7 @@ setup_mac_defaults() {
 install_node() {
   echo_t "Installing Node.js LTS (via nvm)"
 
-  export NVM_DIR="$HOME/.nvm"
-  [ -s "/opt/homebrew/opt/nvm/nvm.sh" ] && source "/opt/homebrew/opt/nvm/nvm.sh"
+  _load_nvm
 
   if ! _command_exists nvm; then
     echo_w "nvm not found — skipping Node install (run install_dev_tools first)"
@@ -427,8 +610,7 @@ install_claude_code() {
   fi
 
   # Ensure nvm/node is loaded
-  export NVM_DIR="$HOME/.nvm"
-  [ -s "/opt/homebrew/opt/nvm/nvm.sh" ] && source "/opt/homebrew/opt/nvm/nvm.sh"
+  _load_nvm
 
   if ! _command_exists npm; then
     echo_w "npm not found — skipping Claude Code install (run install_node first)"
@@ -467,11 +649,18 @@ print_summary() {
   echo_i "Full log: $OUTPUT_FILE"
   echo ""
   echo_ask "Next manual steps:"
-  echo "  1. Open Ghostty — set font to 'JetBrainsMono Nerd Font' if not auto-detected"
-  echo "  2. Move GITHUB_TOKEN to ~/.github.env  (chmod 600 ~/.github.env)"
-  echo "  3. Move ANTHROPIC_API_KEY to ~/.anthropic.env  (chmod 600 ~/.anthropic.env)"
-  echo "  4. source ~/.zshrc  (or open a new terminal tab)"
-  echo "  5. Run 'claude' to complete Claude Code authentication"
+  if [ "$OS" = "Darwin" ]; then
+    echo "  1. Open Ghostty — set font to 'JetBrainsMono Nerd Font' if not auto-detected"
+    echo "  2. Move GITHUB_TOKEN to ~/.github.env  (chmod 600 ~/.github.env)"
+    echo "  3. Move ANTHROPIC_API_KEY to ~/.anthropic.env  (chmod 600 ~/.anthropic.env)"
+    echo "  4. source ~/.zshrc  (or open a new terminal tab)"
+    echo "  5. Run 'claude' to complete Claude Code authentication"
+  else
+    echo "  1. Move GITHUB_TOKEN to ~/.github.env  (chmod 600 ~/.github.env)"
+    echo "  2. Move ANTHROPIC_API_KEY to ~/.anthropic.env  (chmod 600 ~/.anthropic.env)"
+    echo "  3. source ~/.zshrc  (or open a new terminal tab)"
+    echo "  4. Run 'claude' to complete Claude Code authentication"
+  fi
 }
 
 # ─── Orchestration ────────────────────────────────────────────────────────────
@@ -479,8 +668,8 @@ print_summary() {
 STEPS=(
   check_prereqs
   fix_ssh_permissions
-  setup_homebrew
-  install_ghostty
+  setup_package_manager
+  install_terminal
   install_nerd_font
   setup_shell
   write_zshrc
@@ -516,7 +705,7 @@ run_from() {
 
 print_help() {
   echo ""
-  echo "agentic-dev-setup.sh v$VERSION — Personal MacBook setup"
+  echo "agentic-dev-setup.sh v$VERSION — Agentic dev environment setup (macOS + Linux)"
   echo ""
   echo "Usage:"
   echo "  ./agentic-dev-setup.sh              Run all steps"
@@ -530,7 +719,7 @@ print_help() {
 }
 
 main() {
-  printf "${BGREEN}agentic-dev-setup.sh v${VERSION}${NC}\n"
+  printf "${BGREEN}agentic-dev-setup.sh v${VERSION} [%s]${NC}\n" "$OS"
   printf "${BROWN}Full log: $OUTPUT_FILE${NC}\n\n"
 
   case "${1:-}" in
@@ -544,10 +733,10 @@ main() {
       run_from "$2"
       ;;
     "")
-      if _confirm_choice "Fresh Mac? Run full setup (Homebrew, terminal, dev tools, macOS defaults)"; then
+      if _confirm_choice "Fresh install? Run full setup (package manager, terminal, dev tools, shell config)"; then
         run_all
       else
-        echo_i "Skipping Mac setup — installing Node, Claude Code, and agentic-home only..."
+        echo_i "Skipping full setup — installing Node, Claude Code, and agentic-home only..."
         install_node
         install_claude_code
         setup_agentic_home
