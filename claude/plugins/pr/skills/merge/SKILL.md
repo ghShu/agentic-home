@@ -130,13 +130,19 @@ Map strategy argument to `merge_method`: `squash` → `squash`, `merge` → `mer
 
 ### Step 8 — Post-merge cleanup
 
-Fast-forward the local base branch without checking it out:
+Try to fast-forward the local base branch without checking it out:
 
 ```bash
 git fetch origin <base-branch>:<base-branch>
 ```
 
-This updates the local base branch ref directly regardless of which branch is currently checked out, and works correctly in worktrees where the base branch may be locked by another worktree.
+If that fails (exit non-zero — happens when the base branch is checked out in another worktree, including the primary worktree), fall back to updating only the remote tracking ref:
+
+```bash
+git fetch origin
+```
+
+Then note in the result: "local `<base-branch>` needs a `git pull` in the worktree where it is checked out."
 
 If currently on the merged head branch and the base branch is NOT locked by another worktree, optionally switch:
 ```bash
