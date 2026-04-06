@@ -18,8 +18,9 @@ echo "===================="
 if command -v agentsview &>/dev/null; then
   AGENTSVIEW_PORT=""
   # Check if already running on any port in range 8080-8099
+  # Use -f so curl fails on 4xx/5xx — avoids false positives from other servers
   for _port in $(seq 8080 8099); do
-    if curl -s --max-time 1 "http://localhost:${_port}/api/v1/version" >/dev/null 2>&1; then
+    if curl -sf --max-time 1 "http://localhost:${_port}/api/v1/version" >/dev/null 2>&1; then
       AGENTSVIEW_PORT=$_port
       break
     fi
