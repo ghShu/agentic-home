@@ -223,7 +223,7 @@ setup_package_manager() {
       sudo apt-get update -qq >> "$OUTPUT_FILE" 2>&1
       echo_i "apt updated"
     elif [ "$PKG_MANAGER" = "dnf" ] || [ "$PKG_MANAGER" = "yum" ]; then
-      sudo "$PKG_MANAGER" check-update >> "$OUTPUT_FILE" 2>&1 || true
+      sudo "$PKG_MANAGER" check-update >> "$OUTPUT_FILE" 2>&1 || true  # exits 100 when updates are available — not an error
       echo_i "$PKG_MANAGER updated"
     elif [ "$PKG_MANAGER" = "pacman" ]; then
       sudo pacman -Sy >> "$OUTPUT_FILE" 2>&1
@@ -244,7 +244,7 @@ _configure_linux_terminal_font() {
     echo_i "Set monospace font via gsettings (gnome-terminal will pick this up)"
 
   # Priority 2: kitty
-  elif [ -d "$HOME/.config/kitty" ]; then
+  elif [ -d "$HOME/.config/kitty" ] || _command_exists kitty; then
     local conf="$HOME/.config/kitty/kitty.conf"
     if ! grep -q "font_family" "$conf" 2>/dev/null; then
       echo "font_family $font" >> "$conf"
@@ -400,6 +400,9 @@ write_zshrc() {
 
 # ─── PATH ─────────────────────────────────────────────────────────────────────
 export PATH="$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH"
+# Homebrew (macOS) — sets HOMEBREW_PREFIX, HOMEBREW_CELLAR, and adds brew to PATH
+[ -f /opt/homebrew/bin/brew ] && eval "$(/opt/homebrew/bin/brew shellenv)"
+[ -f /usr/local/bin/brew ]    && eval "$(/usr/local/bin/brew shellenv)"
 
 # ─── oh-my-zsh ────────────────────────────────────────────────────────────────
 export ZSH="$HOME/.oh-my-zsh"
@@ -440,8 +443,8 @@ install_dev_tools() {
     _load_brew
   fi
 
-  # Package names are the same across brew/apt for these tools
-  local tools=(git gh jq wget tree bat fd ripgrep fzf)
+  # Tools where binary name == package name on all platforms
+  local tools=(git gh jq wget tree ripgrep fzf)
   for tool in "${tools[@]}"; do
     if _command_exists "$tool"; then
       echo_i "$tool already installed — skipping"
@@ -451,6 +454,38 @@ install_dev_tools() {
     fi
   done
 
+  # bat: packaged as 'batcat' on Ubuntu/Debian, 'bat' everywhere else
+  if _command_exists bat; then
+    echo_i "bat already installed — skipping"
+  elif _command_exists batcat; then
+    echo_i "bat already installed as batcat — skipping"
+  else
+    echo_i "Installing bat..."
+    if [ "$PKG_MANAGER" = "apt" ]; then
+      sudo apt-get install -y bat >> "$OUTPUT_FILE" 2>&1
+      mkdir -p "$HOME/.local/bin"
+      ln -sf "$(command -v batcat)" "$HOME/.local/bin/bat"
+    else
+      install_pkg bat
+    fi
+  fi
+
+  # fd: packaged as 'fd-find' on Ubuntu/Debian, binary is 'fdfind'
+  if _command_exists fd; then
+    echo_i "fd already installed — skipping"
+  elif _command_exists fdfind; then
+    echo_i "fd already installed as fdfind — skipping"
+  else
+    echo_i "Installing fd..."
+    if [ "$PKG_MANAGER" = "apt" ]; then
+      sudo apt-get install -y fd-find >> "$OUTPUT_FILE" 2>&1
+      mkdir -p "$HOME/.local/bin"
+      ln -sf "$(command -v fdfind)" "$HOME/.local/bin/fd"
+    else
+      install_pkg fd
+    fi
+  fi
+
   # NVM — Homebrew on macOS, official install script on Linux
   if _command_exists nvm || [ -s "$HOME/.nvm/nvm.sh" ]; then
     echo_i "nvm already installed"
@@ -459,7 +494,7 @@ install_dev_tools() {
     if [ "$OS" = "Darwin" ]; then
       brew install nvm >> "$OUTPUT_FILE" 2>&1
     else
-      curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash >> "$OUTPUT_FILE" 2>&1
+      curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash >> "$OUTPUT_FILE" 2>&1  # pin: update periodically
     fi
   fi
 
