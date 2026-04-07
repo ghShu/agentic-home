@@ -94,7 +94,7 @@ Default: YES.
 State exactly what will happen:
 
 ```
-This will rebase-merge PR #N ("<title>") into `main`
+This will <strategy>-merge PR #N ("<title>") into `main`
 and delete the remote branch `<head-branch>`.
 
 Proceed? [y/N]
@@ -119,8 +119,8 @@ REPO=$(gh repo view --json name -q .name)
 # Merge
 gh api repos/${OWNER}/${REPO}/pulls/<number>/merge \
   --method PUT \
-  --field merge_method=rebase \
-  --field commit_title="<PR title> (#<number>)"
+  --field merge_method=<merge_method> \
+  [--field commit_title="<PR title> (#<number>)"]  # squash only — omit for rebase/merge
 
 # Delete remote branch (if requested)
 gh api repos/${OWNER}/${REPO}/git/refs/heads/<head-branch> --method DELETE
