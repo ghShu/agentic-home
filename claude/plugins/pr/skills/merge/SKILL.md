@@ -13,7 +13,7 @@ Merge a pull request. Always confirms the exact action before proceeding.
 /pr:merge [<number> | <url> | <branch>] [squash | merge | rebase]
 ```
 
-Default strategy: `squash`.
+Default strategy: `rebase`.
 
 ## Workflow
 
@@ -74,12 +74,12 @@ If a strategy was given as an argument (`squash`, `merge`, or `rebase`), use it.
 Otherwise ask:
 ```
 Merge strategy:
-  [1] squash  — combine all commits into one (default)
-  [2] merge   — merge commit preserving all commits
-  [3] rebase  — replay commits onto base branch
+  [1] rebase  — replay commits onto base branch (default)
+  [2] squash  — combine all commits into one
+  [3] merge   — merge commit preserving all commits
 ```
 
-Default: squash.
+Default: rebase.
 
 ### Step 5 — Ask about branch deletion
 
@@ -94,7 +94,7 @@ Default: YES.
 State exactly what will happen:
 
 ```
-This will squash-merge PR #N ("<title>") into `main`
+This will rebase-merge PR #N ("<title>") into `main`
 and delete the remote branch `<head-branch>`.
 
 Proceed? [y/N]
@@ -106,7 +106,7 @@ Default is **NO**. Only proceed on explicit `y` / `yes`.
 
 If `mergeStateStatus` is `BLOCKED` and requires a merge queue:
 ```bash
-gh pr merge <ref> --squash --auto
+gh pr merge <ref> --rebase --auto
 ```
 Note: `--auto` enables auto-merge; the PR will merge automatically once all requirements are met. Stop here — post-merge cleanup will happen when the queue processes the PR.
 
@@ -119,7 +119,7 @@ REPO=$(gh repo view --json name -q .name)
 # Merge
 gh api repos/${OWNER}/${REPO}/pulls/<number>/merge \
   --method PUT \
-  --field merge_method=squash \
+  --field merge_method=rebase \
   --field commit_title="<PR title> (#<number>)"
 
 # Delete remote branch (if requested)
@@ -153,7 +153,7 @@ git checkout <base-branch>
 
 ```
 ✓ Merged PR #N: "<title>"
-  Strategy: squash  |  Branch deleted: yes
+  Strategy: rebase  |  Branch deleted: yes
   Base branch updated: main
 ```
 
@@ -161,7 +161,7 @@ git checkout <base-branch>
 
 - **Always confirm** — never merge without explicit `y` confirmation; default is NO
 - **Surface warnings, don't block** — failing checks and change requests are warnings, not hard stops; the user may have context
-- **Default squash** — keeps base branch history clean for feature branches
+- **Default rebase** — preserves individual commits on main; pairs well with deliberate commit grouping via `/pr:commit`
 - **Switch off the merged branch** — always land on the base branch after merging to avoid confusion
 - **`--auto` for merge queues** — detect `BLOCKED` state and use auto-merge rather than failing
 - **API over `gh pr merge`** — `gh pr merge` runs local git operations after merging that break in worktree setups; use the GitHub API directly instead
