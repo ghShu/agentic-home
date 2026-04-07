@@ -1,6 +1,6 @@
 ---
 name: kb:lint
-description: Run health checks over ~/knowledge/. Detects orphaned articles, broken links, unprocessed/malformed raw files, unreferenced images, unresolved curated references, stubs, islands (no backlinks), and duplicate concepts. Writes a report to wiki/_meta/lint-report.md.
+description: Run health checks over $KB_HOME/. Detects orphaned articles, broken links, unprocessed/malformed raw files, unreferenced images, unresolved curated references, stubs, islands (no backlinks), and duplicate concepts. Writes a report to wiki/_meta/lint-report.md.
 ---
 
 # kb:lint
@@ -13,15 +13,23 @@ User says: "lint", "check my kb", "health check", "check the wiki", or runs `/kb
 
 ## Instructions
 
+### Step 0 — Resolve KB path
+
+Run:
+```bash
+echo "${KB_HOME:-$HOME/knowledge}"
+```
+Use the output as `$KB_HOME` for all file paths in this skill.
+
 ### Step 1 — Read conventions and index
 
-1. Read `~/knowledge/KNOWLEDGE.md`
-2. Read `~/knowledge/wiki/_index.md` — this is the authoritative list of all expected articles
+1. Read `$KB_HOME/KNOWLEDGE.md`
+2. Read `$KB_HOME/wiki/_index.md` — this is the authoritative list of all expected articles
 
 ### Step 2 — Structural checks
 
 **A. Index completeness**
-- Glob `~/knowledge/wiki/**/*.md` (excluding `_index.md`, `_meta/`, and topic `index.md` files)
+- Glob `$KB_HOME/wiki/**/*.md` (excluding `_index.md`, `_meta/`, and topic `index.md` files)
 - For each wiki article found on disk: verify it has an entry in `_index.md`
 - For each entry in `_index.md`: verify the linked file exists on disk
 - Flag: articles on disk not in index (orphans), and index entries with no file (dead links)
@@ -45,20 +53,20 @@ User says: "lint", "check my kb", "health check", "check the wiki", or runs `/kb
 - Flag: articles with zero inbound wikilinks (islands — disconnected from the graph)
 
 **F. Unprocessed inbox**
-- Glob `~/knowledge/raw/**/*.md`
+- Glob `$KB_HOME/raw/**/*.md`
 - Flag: any raw file with `status: unprocessed` (sitting in inbox, not yet compiled)
 - Flag: any raw `.md` file with no YAML front matter (manually dropped — needs front matter before compiling)
 - Flag: any raw `.md` file with front matter but missing the `status` field (will be treated as unprocessed by compile, but should be explicit)
 
 **G-img. Unreferenced images**
-- Glob `~/knowledge/raw/images/**/*` for all image files (`.png`, `.jpg`, `.jpeg`, `.gif`, `.svg`, `.webp`)
-- For each image: search `~/knowledge/wiki/**/*.md` for any reference to that filename
+- Glob `$KB_HOME/raw/images/**/*` for all image files (`.png`, `.jpg`, `.jpeg`, `.gif`, `.svg`, `.webp`)
+- For each image: search `$KB_HOME/wiki/**/*.md` for any reference to that filename
 - Flag: images in `raw/images/` not referenced by any wiki article (orphaned assets)
 
 **H. Unresolved curated references**
-- Glob `~/knowledge/raw/**/*.md` and read each file's `references.curated` front matter list
+- Glob `$KB_HOME/raw/**/*.md` and read each file's `references.curated` front matter list
 - For each curated reference URL: check if a raw file with that `source:` URL already exists
-- Flag: curated references not yet ingested (known-valuable sources sitting uningestd)
+- Flag: curated references not yet ingested (known-valuable sources sitting uningested)
 - Skip `in_text` references — only curated ones are flagged
 
 **G. Potential duplicates**
@@ -88,7 +96,7 @@ Before writing the report, derive forward-looking suggestions:
 
 ### Step 4b — Write lint report
 
-Write to `~/knowledge/wiki/_meta/lint-report.md`:
+Write to `$KB_HOME/wiki/_meta/lint-report.md`:
 
 ```markdown
 ---
@@ -164,7 +172,7 @@ issues_found: M
 
 ### Step 5 — Append to log
 
-Append an entry to `~/knowledge/wiki/log.md`:
+Append an entry to `$KB_HOME/wiki/log.md`:
 
 ```
 ## [YYYY-MM-DD] lint | N articles, X critical, Y warnings
@@ -181,7 +189,7 @@ Wiki lint complete.
   Warnings: Y
   Suggested actions: Z
 
-Full report: ~/knowledge/wiki/_meta/lint-report.md
+Full report: $KB_HOME/wiki/_meta/lint-report.md
 ```
 
 If there are zero issues: say so clearly — a clean wiki is the goal.

@@ -13,6 +13,14 @@ User says "harvest sessions into kb", "extract insights from sessions", "save se
 
 ## Instructions
 
+### Step 0 — Resolve KB path
+
+Run:
+```bash
+echo "${KB_HOME:-$HOME/knowledge}"
+```
+Use the output as `$KB_HOME` for all file paths in this skill.
+
 ### Step 1 — Check availability
 
 Read the port agentsview is running on:
@@ -77,7 +85,7 @@ Read through the session messages and extract content worth capturing in the KB.
 
 For each meaningful cluster of insights, draft a note file. Group related insights from multiple sessions into a single note if they form a coherent topic.
 
-File path: `~/knowledge/raw/notes/YYYY-MM-DD-harvest-<slug>.md`
+File path: `$KB_HOME/raw/notes/YYYY-MM-DD-harvest-<slug>.md`
 
 Format:
 ```markdown
@@ -114,7 +122,7 @@ Present the user with a summary of what will be written:
 ```
 Ready to write N note(s):
 
-1. ~/knowledge/raw/notes/2024-01-15-harvest-auth-middleware.md
+1. $KB_HOME/raw/notes/2024-01-15-harvest-auth-middleware.md
    Topics: auth middleware decisions, session token storage approach
 
 Proceed? (y/n)
@@ -127,7 +135,7 @@ Only write after confirmation. If the user wants changes, revise first.
 Write the confirmed notes. Then say:
 
 ```
-Wrote N note(s) to ~/knowledge/raw/notes/.
+Wrote N note(s) to $KB_HOME/raw/notes/.
 Run /kb:compile to compile them into wiki articles.
 ```
 

@@ -183,17 +183,17 @@ Workers do not need any special instructions — they self-identify and claim ta
 
 ## Knowledge base
 
-The `kb` plugin manages a personal wiki at `~/knowledge/`. Source material lives in `raw/` and gets compiled into structured wiki articles in `wiki/` by an LLM.
+The `kb` plugin manages a personal wiki at `$KB_HOME` (default `~/knowledge/`, set during `install.sh`). Source material lives in `raw/` and gets compiled into structured wiki articles in `wiki/` by an LLM.
 
 | Skill | Trigger | What it does |
 |-------|---------|--------------|
-| `/kb:ingest` | "ingest", "add to kb", URL | Saves source document to `~/knowledge/raw/` with front matter and downloaded images |
+| `/kb:ingest` | "ingest", "add to kb", URL | Saves source document to `$KB_HOME/raw/` with front matter and downloaded images |
 | `/kb:compile` | "compile", "update wiki" | Processes `raw/` into wiki articles via the `wiki-editor` subagent |
 | `/kb:query` | "kb: \<question\>" | Answers questions grounded strictly in wiki content, with citations |
 | `/kb:lint` | "lint my kb" | Health checks → `wiki/_meta/lint-report.md` |
-| `/kb:note` | "note:", quick capture | Saves a quick note to `~/knowledge/raw/notes/` without a source URL |
+| `/kb:note` | "note:", quick capture | Saves a quick note to `$KB_HOME/raw/notes/` without a source URL |
 
-Conventions are documented in `~/knowledge/KNOWLEDGE.md` (seeded from `knowledge/KNOWLEDGE.md.seed`).
+Conventions are documented in `$KB_HOME/KNOWLEDGE.md` (seeded from `claude/plugins/kb/seed/KNOWLEDGE.md.seed`).
 
 ## Session history with agentsview
 

@@ -8,7 +8,7 @@ Do not delete it. Edit it as your knowledge base evolves.
 ## Directory Structure
 
 ```
-~/knowledge/
+$KB_HOME/
 ├── raw/          # Source material inbox — LLM reads but rarely edits these
 │   ├── articles/ # Web articles, blog posts (YYYY-MM-DD-<slug>.md)
 │   ├── papers/   # PDFs or transcripts of research papers
@@ -122,7 +122,7 @@ Report: wiki/_meta/lint-report.md
 Filed: raw/notes/YYYY-MM-DD-slug.md
 ```
 
-Parse the last 5 entries with: `grep "^## \[" ~/knowledge/wiki/log.md | tail -5`
+Parse the last 5 entries with: `grep "^## \[" $KB_HOME/wiki/log.md | tail -5`
 
 ---
 

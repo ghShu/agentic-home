@@ -15,7 +15,7 @@ This home directory is configured using [agentic-home](https://github.com/simonw
 | `~/.claude/` | Claude Code configuration (hooks, skills, agents, settings) |
 | `~/.codex/` | Codex CLI configuration |
 | `~/dev/agentic-home/` | Source of truth for this home directory config |
-| `~/knowledge/` | Personal knowledge base (raw sources + LLM-compiled wiki) |
+| `$KB_HOME` | Personal knowledge base (raw sources + LLM-compiled wiki); default `~/knowledge/`, configured via `$KB_HOME` |
 
 ## File Search Guidance
 
@@ -33,7 +33,7 @@ This home directory is configured using [agentic-home](https://github.com/simonw
 
 ## Knowledge Base Skills (Claude Code)
 
-Five slash commands manage the personal knowledge base at `~/knowledge/`:
+Five slash commands manage the personal knowledge base at `$KB_HOME` (default `~/knowledge/`, set during `install.sh`):
 
 | Skill | Trigger | What it does |
 |-------|---------|--------------|
@@ -45,7 +45,7 @@ Five slash commands manage the personal knowledge base at `~/knowledge/`:
 
 The `wiki-editor` subagent (`~/.claude/agents/wiki-editor.md`) handles all writes to `wiki/`.
 The `kbsearch` CLI (`~/bin/kbsearch`) provides fast JSON-output term search over the wiki.
-Conventions are documented in `~/knowledge/KNOWLEDGE.md`.
+Conventions are documented in `$KB_HOME/KNOWLEDGE.md`.
 
 ## Session History (agentsview)
 

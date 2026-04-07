@@ -1,11 +1,11 @@
 ---
 name: kb:ingest
-description: Ingest a source document (URL, local file, or pasted text) into ~/knowledge/raw/. Downloads images locally to raw/images/ and rewrites references. Extracts outbound reference URLs into front matter. Optionally follows and ingests references when user says "ingest with references" or passes --follow-refs. Never writes to wiki/.
+description: Ingest a source document (URL, local file, or pasted text) into $KB_HOME/raw/. Downloads images locally to raw/images/ and rewrites references. Extracts outbound reference URLs into front matter. Optionally follows and ingests references when user says "ingest with references" or passes --follow-refs. Never writes to wiki/.
 ---
 
 # kb:ingest
 
-Save a source document to `~/knowledge/raw/` so it can be compiled into the wiki later.
+Save a source document to `$KB_HOME/raw/` so it can be compiled into the wiki later.
 
 ## Trigger
 
@@ -15,9 +15,17 @@ User says: "ingest", "add to kb", "add to knowledge base", "clip this", or provi
 
 ## Instructions
 
+### Step 0 — Resolve KB path
+
+Run:
+```bash
+echo "${KB_HOME:-$HOME/knowledge}"
+```
+Use the output as `$KB_HOME` for all file paths in this skill.
+
 ### Step 1 — Read conventions
 
-Read `~/knowledge/KNOWLEDGE.md` to understand the front matter format and directory structure.
+Read `$KB_HOME/KNOWLEDGE.md` to understand the front matter format and directory structure.
 
 ### Step 2 — Determine source type
 
@@ -35,8 +43,8 @@ From the source content, extract:
 
 ### Step 4 — Choose destination and filename
 
-- Web articles and blog posts → `~/knowledge/raw/articles/`
-- Research papers, technical reports → `~/knowledge/raw/papers/`
+- Web articles and blog posts → `$KB_HOME/raw/articles/`
+- Research papers, technical reports → `$KB_HOME/raw/papers/`
 - Filename format: `YYYY-MM-DD-<slugified-title>.md`
   - Slugify: lowercase, replace spaces and special chars with hyphens, max 60 chars
 
@@ -46,9 +54,9 @@ For URL sources, find all image references in the fetched content (`![...](url)`
 
 For each image URL:
 1. Derive a local filename: `<article-slug>-<original-filename>` (e.g. `components-of-a-coding-agent-diagram.png`). If the URL has no clear filename, use `<article-slug>-img-<N>.<ext>`.
-2. Download the image to `~/knowledge/raw/images/` using:
+2. Download the image to `$KB_HOME/raw/images/` using:
    ```bash
-   curl -sL "<image-url>" -o "$HOME/knowledge/raw/images/<local-filename>"
+   curl -sL "<image-url>" -o "$KB_HOME/raw/images/<local-filename>"
    ```
 3. Rewrite the reference in the article markdown to Obsidian wikilink syntax:
    - Before: `![alt text](https://example.com/diagram.png)`
@@ -67,7 +75,7 @@ Scan the article for outbound URLs. Classify them into two buckets:
 
 Do **not** include:
 - Navigation links, social media links, subscription/newsletter URLs
-- URLs already present in `~/knowledge/raw/` (check `source:` front matter of existing files)
+- URLs already present in `$KB_HOME/raw/` (check `source:` front matter of existing files)
 - Image URLs (already handled in Step 5)
 - GitHub repo URLs (note them separately as `repos:`)
 
@@ -118,11 +126,11 @@ Include `references:` always (even if empty lists). This makes unresolved refere
 Include `images:` front matter list of all successfully downloaded image paths.
 Strip all HTML artifacts. Preserve headings, lists, and code blocks.
 
-**Never write anything to `~/knowledge/wiki/`** — ingest is strictly an inbox operation.
+**Never write anything to `$KB_HOME/wiki/`** — ingest is strictly an inbox operation.
 
 ### Step 8 — Append to log
 
-Append an entry to `~/knowledge/wiki/log.md`. If the file does not exist yet, create it with a header first (see KNOWLEDGE.md for format). Append at the end:
+Append an entry to `$KB_HOME/wiki/log.md`. If the file does not exist yet, create it with a header first (see KNOWLEDGE.md for format). Append at the end:
 
 ```
 ## [YYYY-MM-DD] ingest | Article Title
@@ -143,10 +151,10 @@ Files: raw/articles/YYYY-MM-DD-slug.md, raw/articles/YYYY-MM-DD-ref1.md, ...
 
 Print:
 ```
-Saved: ~/knowledge/raw/articles/YYYY-MM-DD-slug.md
+Saved: $KB_HOME/raw/articles/YYYY-MM-DD-slug.md
 Title: "Article Title"
 Tags: tag1, tag2
-Images: N downloaded to ~/knowledge/raw/images/
+Images: N downloaded to $KB_HOME/raw/images/
 References: N curated, N in-text (run with --follow-refs to ingest curated refs)
 
 Run /kb:compile to integrate into the wiki.
@@ -154,7 +162,7 @@ Run /kb:compile to integrate into the wiki.
 
 If follow-refs mode was active:
 ```
-Saved: ~/knowledge/raw/articles/YYYY-MM-DD-slug.md
+Saved: $KB_HOME/raw/articles/YYYY-MM-DD-slug.md
 Title: "Article Title"
 References followed: N/N ingested (M skipped — see above)
 
@@ -166,6 +174,6 @@ Run /kb:compile to integrate all new files into the wiki.
 - **Duplicate**: if a file for this source already exists (same `source:` URL), warn the user and skip rather than overwriting
 - **PDF**: create a stub in `raw/papers/` with front matter and `content: "[PDF — compile manually or via Zotero2MD]"` — do not attempt to read binary PDF content
 - **Private/paywalled URL**: if the fetch fails, ask the user to paste the content directly
-- **Image-only URL**: if the URL points directly to an image file (`.png`, `.jpg`, `.gif`, `.svg`, `.webp`), download it to `~/knowledge/raw/images/` and create a minimal stub article in `raw/articles/` with the image embedded and `status: unprocessed`
+- **Image-only URL**: if the URL points directly to an image file (`.png`, `.jpg`, `.gif`, `.svg`, `.webp`), download it to `$KB_HOME/raw/images/` and create a minimal stub article in `raw/articles/` with the image embedded and `status: unprocessed`
 - **Relative image URLs**: resolve relative image paths against the article's base URL before downloading
 - **Duplicate images**: if an image filename already exists in `raw/images/`, append `-2`, `-3`, etc. rather than overwriting

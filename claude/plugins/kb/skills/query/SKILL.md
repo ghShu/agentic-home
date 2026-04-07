@@ -5,7 +5,7 @@ description: Answer a question grounded strictly in the compiled wiki. Reads _in
 
 # kb:query
 
-Answer questions using only the content in `~/knowledge/wiki/`.
+Answer questions using only the content in `$KB_HOME/wiki/`.
 
 ## Trigger
 
@@ -22,13 +22,22 @@ User asks a question prefixed with "kb:" or "ask my kb", uses `/kb:query`, or as
 
 ## Instructions
 
+### Step 0 — Resolve KB path
+
+Run:
+```bash
+echo "${KB_HOME:-$HOME/knowledge}"
+```
+Use the output as `$KB_HOME` for all file paths in this skill.
+When delegating to wiki-editor, pass `KB_HOME: <resolved-path>` in the context.
+
 ### Step 1 — Read conventions
 
-Read `~/knowledge/KNOWLEDGE.md` briefly to understand the wiki structure.
+Read `$KB_HOME/KNOWLEDGE.md` briefly to understand the wiki structure.
 
 ### Step 2 — Map the wiki
 
-Read `~/knowledge/wiki/_index.md` in full. This is your map — it lists every article with a one-sentence summary. Do not skip this step.
+Read `$KB_HOME/wiki/_index.md` in full. This is your map — it lists every article with a one-sentence summary. Do not skip this step.
 
 ### Step 3 — Find relevant articles
 
@@ -69,7 +78,7 @@ Default: answer inline in the conversation.
 
 If the user asks to "save", "write a report", or "make slides":
 
-**Report** — write to `~/knowledge/outputs/reports/YYYY-MM-DD-<slug>.md`:
+**Report** — write to `$KB_HOME/outputs/reports/YYYY-MM-DD-<slug>.md`:
 ```markdown
 ---
 title: "Query: <question>"
@@ -87,7 +96,7 @@ sources:
 - [[topic/concept]] — brief note on what was used from this article
 ```
 
-**Marp slideshow** — write to `~/knowledge/outputs/slides/YYYY-MM-DD-<slug>.md`:
+**Marp slideshow** — write to `$KB_HOME/outputs/slides/YYYY-MM-DD-<slug>.md`:
 ```markdown
 ---
 marp: true
@@ -124,7 +133,7 @@ Do **not** suggest kb:ingest for these — synthesized articles go directly to w
 
 ### Step 5c — Append to log
 
-Append an entry to `~/knowledge/wiki/log.md`:
+Append an entry to `$KB_HOME/wiki/log.md`:
 
 ```
 ## [YYYY-MM-DD] query | "Question text"
