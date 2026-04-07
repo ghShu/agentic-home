@@ -1,11 +1,11 @@
 ---
 name: kb:compile
-description: Compile unprocessed raw documents into wiki articles. Reads ~/knowledge/raw/, identifies new/updated sources, creates or updates wiki articles via the wiki-editor subagent, and updates _index.md.
+description: Compile unprocessed raw documents into wiki articles. Reads $KB_HOME/raw/, identifies new/updated sources, creates or updates wiki articles via the wiki-editor subagent, and updates _index.md.
 ---
 
 # kb:compile
 
-Process unprocessed documents from `~/knowledge/raw/` and integrate them into the wiki.
+Process unprocessed documents from `$KB_HOME/raw/` and integrate them into the wiki.
 
 ## Trigger
 
@@ -13,15 +13,24 @@ User says: "compile", "update wiki", "process inbox", "process raw", or runs `/k
 
 ## Instructions
 
+### Step 0 — Resolve KB path
+
+Run:
+```bash
+echo "${KB_HOME:-$HOME/knowledge}"
+```
+Use the output as `$KB_HOME` for all file paths in this skill.
+When delegating to wiki-editor, pass `KB_HOME: <resolved-path>` in the context.
+
 ### Step 1 — Read conventions and current state
 
 Read both files before doing anything else:
-1. `~/knowledge/KNOWLEDGE.md` — conventions, front matter format, article style
-2. `~/knowledge/wiki/_index.md` — current state of the wiki (all existing articles)
+1. `$KB_HOME/KNOWLEDGE.md` — conventions, front matter format, article style
+2. `$KB_HOME/wiki/_index.md` — current state of the wiki (all existing articles)
 
 ### Step 2 — Find unprocessed documents
 
-Glob `~/knowledge/raw/**/*.md` and read each file's front matter.
+Glob `$KB_HOME/raw/**/*.md` and read each file's front matter.
 
 A file is considered **unprocessed** if any of the following are true:
 - `status: unprocessed` is set explicitly
@@ -32,7 +41,7 @@ A file is **skipped** only if `status: compiled` is explicitly set.
 
 If there are no unprocessed files, print:
 ```
-No unprocessed documents found in ~/knowledge/raw/.
+No unprocessed documents found in $KB_HOME/raw/.
 Use /kb:ingest to add new sources, or drop .md files into raw/ directly.
 ```
 And stop.
@@ -72,6 +81,7 @@ Pass the wiki-editor the following context each time:
 - The current topic `index.md` (if it exists)
 - The current concept article (if it exists, for updates)
 - Instructions from `KNOWLEDGE.md`
+- `KB_HOME: <resolved-path>` — the absolute path to use for all file operations
 
 ### Step 5 — Mark raw files as compiled
 
@@ -84,7 +94,7 @@ Use Edit to change only the `status:` line — do not modify the content.
 
 ### Step 6 — Append to log
 
-Append an entry to `~/knowledge/wiki/log.md`. If the file does not exist yet, create it with a header first (see KNOWLEDGE.md for format). Append at the end:
+Append an entry to `$KB_HOME/wiki/log.md`. If the file does not exist yet, create it with a header first (see KNOWLEDGE.md for format). Append at the end:
 
 ```
 ## [YYYY-MM-DD] compile | N docs processed

@@ -25,6 +25,20 @@ log()    { echo -e "${BLUE}  →${NC} $*"; }
 ok()     { echo -e "${GREEN}  ✓${NC} $*"; }
 warn()   { echo -e "${YELLOW}  !${NC} $*"; }
 
+# --- KB_HOME configuration ---
+DEFAULT_KB="$HOME/knowledge"
+read -rp "Knowledge base location [${DEFAULT_KB}]: " KB_HOME_INPUT
+KB_HOME="${KB_HOME_INPUT:-$DEFAULT_KB}"
+
+SHELL_RC="$HOME/.zshrc"
+[ -n "$BASH_VERSION" ] && SHELL_RC="$HOME/.bashrc"
+if ! grep -q "KB_HOME" "$SHELL_RC" 2>/dev/null; then
+  echo "export KB_HOME=\"$KB_HOME\"" >> "$SHELL_RC"
+  ok "Set KB_HOME=$KB_HOME in $SHELL_RC"
+else
+  ok "KB_HOME already set in $SHELL_RC"
+fi
+
 # Create a symlink, backing up any existing file/symlink first
 symlink() {
   local src="$1"
@@ -77,6 +91,15 @@ for bin_file in "$REPO_DIR/bin"/*; do
   symlink "$bin_file" "$HOME/bin/$(basename "$bin_file")"
 done
 
+# --- Plugin bin scripts (symlinked without extension) ---
+log "Linking plugin bin scripts..."
+for plugin_bin in "$REPO_DIR/claude/plugins"/*/bin/*; do
+  [ -f "$plugin_bin" ] || continue
+  chmod +x "$plugin_bin"
+  bin_name="$(basename "${plugin_bin%.*}")"
+  symlink "$plugin_bin" "$HOME/bin/$bin_name"
+done
+
 # --- Claude Code settings ---
 log "Linking Claude Code settings..."
 symlink "$REPO_DIR/claude/settings.json" "$HOME/.claude/settings.json"
@@ -122,7 +145,7 @@ fi
 
 # --- Agents ---
 log "Linking agents..."
-for agent_file in "$REPO_DIR/claude/agents"/*.md; do
+for agent_file in "$REPO_DIR/claude/agents"/*.md "$REPO_DIR/claude/plugins"/*/agents/*.md; do
   [ -e "$agent_file" ] || continue
   agent_name="$(basename "$agent_file")"
   symlink "$agent_file" "$HOME/.claude/agents/$agent_name"
@@ -154,14 +177,13 @@ else
 fi
 
 # --- Knowledge base skeleton ---
-log "Ensuring knowledge base skeleton..."
-KB="$HOME/knowledge"
-mkdir -p "$KB/raw/articles" "$KB/raw/papers" "$KB/raw/images" "$KB/raw/notes"
-mkdir -p "$KB/wiki/_meta"
-mkdir -p "$KB/outputs/reports" "$KB/outputs/slides"
+log "Ensuring knowledge base skeleton at $KB_HOME..."
+mkdir -p "$KB_HOME/raw/articles" "$KB_HOME/raw/papers" "$KB_HOME/raw/images" "$KB_HOME/raw/notes"
+mkdir -p "$KB_HOME/wiki/_meta"
+mkdir -p "$KB_HOME/outputs/reports" "$KB_HOME/outputs/slides"
 
-[ ! -f "$KB/KNOWLEDGE.md" ] && cp "$REPO_DIR/knowledge/KNOWLEDGE.md.seed" "$KB/KNOWLEDGE.md" && ok "Seeded ~/knowledge/KNOWLEDGE.md"
-[ ! -f "$KB/wiki/_index.md" ] && cp "$REPO_DIR/knowledge/wiki-index.md.seed" "$KB/wiki/_index.md" && ok "Seeded ~/knowledge/wiki/_index.md"
+[ ! -f "$KB_HOME/KNOWLEDGE.md" ] && cp "$REPO_DIR/claude/plugins/kb/seed/KNOWLEDGE.md.seed" "$KB_HOME/KNOWLEDGE.md" && ok "Seeded $KB_HOME/KNOWLEDGE.md"
+[ ! -f "$KB_HOME/wiki/_index.md" ] && cp "$REPO_DIR/claude/plugins/kb/seed/wiki-index.md.seed" "$KB_HOME/wiki/_index.md" && ok "Seeded $KB_HOME/wiki/_index.md"
 
 # --- agentsview ---
 log "Checking agentsview..."

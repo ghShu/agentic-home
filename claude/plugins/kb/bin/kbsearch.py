@@ -12,12 +12,13 @@ Output is JSON for LLM consumption:
 Empty result: []
 """
 
+import os
 import sys
 import json
 import re
 from pathlib import Path
 
-KNOWLEDGE_DIR = Path.home() / "knowledge"
+KNOWLEDGE_DIR = Path(os.environ.get("KB_HOME", str(Path.home() / "knowledge")))
 WIKI_DIR = KNOWLEDGE_DIR / "wiki"
 INDEX_FILE = WIKI_DIR / "_index.md"
 

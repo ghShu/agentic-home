@@ -1,11 +1,11 @@
 ---
 name: kb:note
-description: Capture a quick note or observation into ~/knowledge/raw/notes/ without requiring a source URL. Useful for session insights, tool discoveries, prompt patterns, and agentic workflow observations. Gets compiled into the wiki like other raw sources.
+description: Capture a quick note or observation into $KB_HOME/raw/notes/ without requiring a source URL. Useful for session insights, tool discoveries, prompt patterns, and agentic workflow observations. Gets compiled into the wiki like other raw sources.
 ---
 
 # kb:note
 
-Save a quick-capture note to `~/knowledge/raw/notes/` for later compilation into the wiki.
+Save a quick-capture note to `$KB_HOME/raw/notes/` for later compilation into the wiki.
 
 ## Trigger
 
@@ -13,9 +13,17 @@ User says: "kb: note", "add a note to my kb", "save this observation", "note to 
 
 ## Instructions
 
+### Step 0 — Resolve KB path
+
+Run:
+```bash
+echo "${KB_HOME:-$HOME/knowledge}"
+```
+Use the output as `$KB_HOME` for all file paths in this skill.
+
 ### Step 1 — Read conventions
 
-Read `~/knowledge/KNOWLEDGE.md` briefly to understand the notes front matter format and directory structure.
+Read `$KB_HOME/KNOWLEDGE.md` briefly to understand the notes front matter format and directory structure.
 
 ### Step 2 — Capture the note content
 
@@ -34,7 +42,7 @@ From the note content, derive:
 
 ### Step 4 — Write the note
 
-**Filename**: `YYYY-MM-DD-<slugified-title>.md` in `~/knowledge/raw/notes/`
+**Filename**: `YYYY-MM-DD-<slugified-title>.md` in `$KB_HOME/raw/notes/`
 - Slugify: lowercase, replace spaces/special chars with hyphens, max 60 chars
 - If a file with the same slug exists, append `-2`, `-3`, etc.
 
@@ -56,7 +64,7 @@ Keep the content as close to the original as possible. Do not paraphrase or summ
 
 ### Step 5 — Append to log
 
-Append an entry to `~/knowledge/wiki/log.md`. If the file does not exist yet, create it with a header first (see KNOWLEDGE.md for format). Append at the end:
+Append an entry to `$KB_HOME/wiki/log.md`. If the file does not exist yet, create it with a header first (see KNOWLEDGE.md for format). Append at the end:
 
 ```
 ## [YYYY-MM-DD] note | Note title
@@ -68,7 +76,7 @@ Tags: tag1, tag2
 
 Print:
 ```
-Noted: ~/knowledge/raw/notes/YYYY-MM-DD-slug.md
+Noted: $KB_HOME/raw/notes/YYYY-MM-DD-slug.md
 Title: "Note title"
 Tags: tag1, tag2
 
