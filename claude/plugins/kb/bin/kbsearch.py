@@ -18,7 +18,7 @@ import json
 import re
 from pathlib import Path
 
-KNOWLEDGE_DIR = Path(os.environ.get("KB_HOME", str(Path.home() / "knowledge")))
+KNOWLEDGE_DIR = Path(os.environ.get("KB_HOME") or str(Path.home() / "knowledge"))
 WIKI_DIR = KNOWLEDGE_DIR / "wiki"
 INDEX_FILE = WIKI_DIR / "_index.md"
 
