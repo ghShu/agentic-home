@@ -17,7 +17,9 @@ User says: "kb: note", "add a note to my kb", "save this observation", "note to 
 
 Run:
 ```bash
-echo "${KB_HOME:-$HOME/knowledge}"
+KB_HOME="${KB_HOME:-$HOME/knowledge}"
+echo "$KB_HOME"
+[ -d "$KB_HOME" ] || echo "WARNING: $KB_HOME does not exist — run install.sh to create it"
 ```
 Use the output as `$KB_HOME` for all file paths in this skill.
 

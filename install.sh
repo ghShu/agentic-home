@@ -30,9 +30,11 @@ DEFAULT_KB="$HOME/knowledge"
 read -rp "Knowledge base location [${DEFAULT_KB}]: " KB_HOME_INPUT
 KB_HOME="${KB_HOME_INPUT:-$DEFAULT_KB}"
 
-SHELL_RC="$HOME/.zshrc"
-[ -n "$BASH_VERSION" ] && SHELL_RC="$HOME/.bashrc"
-if ! grep -q "KB_HOME" "$SHELL_RC" 2>/dev/null; then
+case "$(basename "$SHELL")" in
+  bash) SHELL_RC="$HOME/.bashrc" ;;
+  *)    SHELL_RC="$HOME/.zshrc"  ;;
+esac
+if ! grep -qE '^export KB_HOME=' "$SHELL_RC" 2>/dev/null; then
   echo "export KB_HOME=\"$KB_HOME\"" >> "$SHELL_RC"
   ok "Set KB_HOME=$KB_HOME in $SHELL_RC"
 else

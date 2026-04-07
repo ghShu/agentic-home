@@ -17,7 +17,9 @@ User says: "lint", "check my kb", "health check", "check the wiki", or runs `/kb
 
 Run:
 ```bash
-echo "${KB_HOME:-$HOME/knowledge}"
+KB_HOME="${KB_HOME:-$HOME/knowledge}"
+echo "$KB_HOME"
+[ -d "$KB_HOME" ] || echo "WARNING: $KB_HOME does not exist — run install.sh to create it"
 ```
 Use the output as `$KB_HOME` for all file paths in this skill.
 
@@ -69,7 +71,7 @@ Use the output as `$KB_HOME` for all file paths in this skill.
 - Flag: curated references not yet ingested (known-valuable sources sitting uningested)
 - Skip `in_text` references — only curated ones are flagged
 
-**G. Potential duplicates**
+**I. Potential duplicates**
 - Look for pairs of articles with very similar titles or overlapping content summaries in `_index.md`
 - Flag: likely duplicates as candidates for merging (do not auto-merge)
 
