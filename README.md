@@ -15,6 +15,7 @@ Clone this repo and run the install script to get:
 - `kb` plugin — personal knowledge base with ingest → compile → query → lint workflow
 - `sessions` plugin — search past sessions and harvest insights into the knowledge base
 - `pr` plugin — full PR lifecycle (create, review, merge, comment, sync, and more)
+- Automatic Claude → Codex skill translation for minimal-overhead cross-tool reuse
 
 ## Setup
 
@@ -97,6 +98,28 @@ Because all config files are symlinked, updates take effect immediately — no r
 | `bin/agent-team` | `~/bin/agent-team` | Launch a tmux agent team session |
 | `codex/instructions.md` | `~/.codex/instructions.md` | Codex global system prompt |
 | `codex/config.toml` | `~/.codex/config.toml` | Codex model and approval mode |
+| `bin/sync-codex-from-claude` + `codex/generated/skills/` | `~/.agents/skills/*` | Generated Codex skills translated from `claude/skills/` and `claude/plugins/*/skills/` |
+
+## Codex translation sync
+
+To keep Codex skills in sync with Claude skills/plugins, run:
+
+```bash
+~/dev/agentic-home/bin/sync-codex-from-claude
+```
+
+This regenerates:
+- `codex/generated/skills/` (Codex-ready `SKILL.md` directories)
+- `codex/generated/plugins/` (translated plugin layout)
+- `codex/generated/MAPPING.md` (source-to-generated mapping)
+
+`install.sh` runs this sync automatically (when Codex is installed) and symlinks generated skills into `~/.agents/skills/`.
+
+Validate translation coverage and generated artifacts:
+
+```bash
+~/dev/agentic-home/bin/test-codex-skill-sync
+```
 
 ## Multi-agent
 

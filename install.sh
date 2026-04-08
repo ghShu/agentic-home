@@ -159,12 +159,27 @@ if command -v codex &>/dev/null; then
   symlink "$REPO_DIR/codex/instructions.md" "$HOME/.codex/instructions.md"
   symlink "$REPO_DIR/codex/config.toml"     "$HOME/.codex/config.toml"
 
+  if [ -x "$REPO_DIR/bin/sync-codex-from-claude" ]; then
+    log "Syncing Claude skills/plugins into Codex format..."
+    "$REPO_DIR/bin/sync-codex-from-claude" >/dev/null
+  else
+    warn "Missing $REPO_DIR/bin/sync-codex-from-claude — skipping Codex skill sync"
+  fi
+
+  log "Linking Codex user skills..."
+  mkdir -p "$HOME/.agents/skills"
+  for skill_dir in "$REPO_DIR/codex/generated/skills"/*/; do
+    [ -d "$skill_dir" ] || continue
+    skill_name="$(basename "$skill_dir")"
+    symlink "$skill_dir" "$HOME/.agents/skills/$skill_name"
+  done
+
   # Log in with API key from ~/.openai.env if not already logged in
   if codex login status 2>&1 | grep -q "API key"; then
     ok "Codex already logged in"
   elif [ -f "$HOME/.openai.env" ]; then
     log "Logging in to Codex with API key from ~/.openai.env..."
-    OPENAI_KEY=$(grep -E 'OPENAI_API_KEY=' "$HOME/.openai.env" | cut -d'"' -f2 | tr -d "'" | tr -d ' ')
+    OPENAI_KEY=$(grep -E 'OPENAI_API_KEY=' "$HOME/.openai.env" | sed "s/.*OPENAI_API_KEY=['\"]*//" | tr -d "'\"")
     if [ -n "$OPENAI_KEY" ]; then
       echo "$OPENAI_KEY" | codex login --with-api-key && ok "Codex logged in"
     else

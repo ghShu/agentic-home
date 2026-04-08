@@ -622,6 +622,57 @@ install_claude_code() {
   echo_i "Claude Code installed: $(claude --version 2>/dev/null || echo 'version unknown')"
 }
 
+install_codex() {
+  echo_t "Installing OpenAI Codex CLI"
+
+  if _command_exists codex; then
+    echo_i "Codex already installed — skipping"
+    return 0
+  fi
+
+  # Ensure nvm/node is loaded
+  _load_nvm
+
+  if ! _command_exists npm; then
+    echo_w "npm not found — skipping Codex install (run install_node first)"
+    return 0
+  fi
+
+  echo_i "Installing @openai/codex globally..."
+  npm install -g @openai/codex >> "$OUTPUT_FILE" 2>&1
+  echo_i "Codex installed: $(codex --version 2>/dev/null || echo 'version unknown')"
+}
+
+link_codex_user_skills() {
+  local repo_dir="$1"
+
+  if ! _command_exists codex; then
+    echo_i "Codex not installed — skipping Codex skill linking"
+    return 0
+  fi
+
+  local sync_script="$repo_dir/bin/sync-codex-from-claude"
+  if [ ! -x "$sync_script" ]; then
+    echo_w "Missing $sync_script — skipping Codex skill linking"
+    return 0
+  fi
+
+  echo_i "Syncing Claude skills/plugins into Codex format..."
+  "$sync_script" >> "$OUTPUT_FILE" 2>&1
+
+  echo_i "Linking generated Codex skills to ~/.agents/skills..."
+  mkdir -p "$HOME/.agents/skills"
+  local count=0
+  local skill_dir skill_name
+  for skill_dir in "$repo_dir"/codex/generated/skills/*/; do
+    [ -d "$skill_dir" ] || continue
+    skill_name="$(basename "$skill_dir")"
+    ln -sfn "$skill_dir" "$HOME/.agents/skills/$skill_name"
+    count=$((count + 1))
+  done
+  echo_i "Linked $count Codex skill(s) into ~/.agents/skills"
+}
+
 setup_agentic_home() {
   echo_t "Setting up agentic-home"
 
@@ -638,6 +689,9 @@ setup_agentic_home() {
 
   echo_i "Running install.sh..."
   bash "$repo_dir/install.sh"
+
+  # Keep generated Codex skills versioned in-repo, but globally discoverable for Codex.
+  link_codex_user_skills "$repo_dir"
 }
 
 print_summary() {
@@ -678,6 +732,7 @@ STEPS=(
   setup_mac_defaults
   install_node
   install_claude_code
+  install_codex
   setup_agentic_home
 )
 
