@@ -33,7 +33,7 @@ Ask the user for visibility if not obvious (`--public` or `--private`). Default 
 
 ```bash
 # Create repo without initialising it (no README, no default branch)
-gh repo create <owner>/<name> --public --description "<description>"
+gh repo create <owner>/<name> --private --description "<description>"
 
 # Add remote
 git remote add origin https://github.com/<owner>/<name>.git
