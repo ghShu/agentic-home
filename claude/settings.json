@@ -5,7 +5,16 @@
   },
   "permissions": {
     "allow": [
-      "Bash(*)",
+      "Bash(git *)",
+      "Bash(ls *)",
+      "Bash(pwd)",
+      "Bash(rg *)",
+      "Bash(find *)",
+      "Bash(sed *)",
+      "Bash(head *)",
+      "Bash(tail *)",
+      "Bash(wc *)",
+      "Bash(awk *)",
       "Bash(gh pr *)",
       "Bash(gh issue *)",
       "Bash(gh repo *)",
