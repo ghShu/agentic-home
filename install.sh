@@ -66,6 +66,34 @@ symlink() {
   LINKED+=("$dst → $src")
 }
 
+# Render a template file by replacing runtime path tokens.
+render_template() {
+  local src="$1"
+  local dst="$2"
+  local tmp
+
+  tmp="$(mktemp)"
+  awk -v home="$HOME" -v repo="$REPO_DIR" '
+    { gsub(/__HOME__/, home); gsub(/__REPO_DIR__/, repo); print }
+  ' "$src" > "$tmp"
+
+  if [ -f "$dst" ] && cmp -s "$tmp" "$dst"; then
+    rm -f "$tmp"
+    SKIPPED+=("$dst")
+    return
+  fi
+
+  if [ -e "$dst" ] || [ -L "$dst" ]; then
+    mkdir -p "$BACKUP_DIR"
+    mv "$dst" "$BACKUP_DIR/"
+    BACKED_UP+=("$dst")
+  fi
+
+  mkdir -p "$(dirname "$dst")"
+  mv "$tmp" "$dst"
+  LINKED+=("$dst ← rendered from $src")
+}
+
 echo ""
 echo "Installing agentic-home configuration..."
 echo "Repo: $REPO_DIR"
@@ -103,8 +131,8 @@ for plugin_bin in "$REPO_DIR/claude/plugins"/*/bin/*; do
 done
 
 # --- Claude Code settings ---
-log "Linking Claude Code settings..."
-symlink "$REPO_DIR/claude/settings.json" "$HOME/.claude/settings.json"
+log "Rendering Claude Code settings..."
+render_template "$REPO_DIR/claude/settings.json" "$HOME/.claude/settings.json"
 
 # --- Hooks ---
 log "Linking hooks..."
@@ -153,9 +181,9 @@ done
 
 # --- Codex (only if installed) ---
 if command -v codex &>/dev/null; then
-  log "Linking Codex configuration..."
+  log "Rendering Codex configuration..."
   symlink "$REPO_DIR/codex/instructions.md" "$HOME/.codex/instructions.md"
-  symlink "$REPO_DIR/codex/config.toml"     "$HOME/.codex/config.toml"
+  render_template "$REPO_DIR/codex/config.toml" "$HOME/.codex/config.toml"
 
   if [ -x "$REPO_DIR/bin/sync-codex-from-claude" ]; then
     log "Syncing Claude skills/plugins into Codex format..."

@@ -88,7 +88,7 @@ Because all config files are symlinked, updates take effect immediately — no r
 |-----------|-------------|---------|
 | `CLAUDE.md` | `~/CLAUDE.md` | Global instructions for Claude Code ([docs](https://docs.anthropic.com/en/docs/claude-code/memory)) |
 | `AGENTS.md` | `~/AGENTS.md` | Cross-agent context file ([agents.md spec](https://agents.md/)) |
-| `claude/settings.json` | `~/.claude/settings.json` | Claude Code config: permissions, hooks, features ([docs](https://docs.anthropic.com/en/docs/claude-code/settings)) |
+| `claude/settings.json` | `~/.claude/settings.json` | Claude Code config template rendered at install time with machine-local paths ([docs](https://docs.anthropic.com/en/docs/claude-code/settings)) |
 | `claude/hooks/session-start.sh` | `~/.claude/hooks/` | Prints context at session start ([hooks docs](https://docs.anthropic.com/en/docs/claude-code/hooks)) |
 | `claude/hooks/notify.sh` | `~/.claude/hooks/` | Desktop notification on stop/idle (macOS via osascript, Linux via notify-send) |
 | `claude/skills/resolve-conflicts/` | `~/.claude/skills/` | `/resolve-conflicts` slash command ([skills docs](https://docs.anthropic.com/en/docs/claude-code/skills)) |
@@ -97,7 +97,7 @@ Because all config files are symlinked, updates take effect immediately — no r
 | `claude/agents/researcher.md` | `~/.claude/agents/` | Read-only researcher subagent ([subagents docs](https://docs.anthropic.com/en/docs/claude-code/sub-agents)) |
 | `bin/agent-team` | `~/bin/agent-team` | Launch a tmux agent team session |
 | `codex/instructions.md` | `~/.codex/instructions.md` | Codex global system prompt |
-| `codex/config.toml` | `~/.codex/config.toml` | Codex model and approval mode |
+| `codex/config.toml` | `~/.codex/config.toml` | Codex config template rendered at install time with machine-local trust paths |
 | `bin/sync-codex-from-claude` + `codex/generated/skills/` | `~/.agents/skills/*` | Generated Codex skills translated from `claude/skills/` and `claude/plugins/*/skills/` |
 
 ## Codex translation sync
@@ -119,6 +119,12 @@ Validate translation coverage and generated artifacts:
 
 ```bash
 ~/dev/agentic-home/bin/test-codex-skill-sync
+```
+
+Validate portability/template rendering:
+
+```bash
+~/dev/agentic-home/bin/test-portable-configs
 ```
 
 ## Multi-agent
