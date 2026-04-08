@@ -17,5 +17,8 @@ trust_level = "trusted"
 [projects."__REPO_DIR__"]
 trust_level = "trusted"
 
+[projects."/Users/focus"]
+trust_level = "trusted"
+
 [notice.model_migrations]
 "gpt-5.3-codex" = "gpt-5.4"
