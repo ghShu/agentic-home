@@ -4,7 +4,7 @@ kbsearch — Search the personal knowledge base wiki.
 
 Usage:
   kbsearch <query terms>     Search wiki/**/*.md for matching lines
-  kbsearch --index-only      Print the contents of wiki/_index.md
+  kbsearch --index-only      Return wiki/_index.md lines as JSON objects
 
 Output is JSON for LLM consumption:
   [{"file": "wiki/topic/concept.md", "line": 12, "snippet": "...matching line..."}]
@@ -25,9 +25,23 @@ INDEX_FILE = WIKI_DIR / "_index.md"
 
 def index_only():
     if not INDEX_FILE.exists():
-        print("", end="")
-        return
-    print(INDEX_FILE.read_text())
+        return []
+
+    try:
+        lines = INDEX_FILE.read_text(encoding="utf-8").splitlines()
+    except (OSError, UnicodeDecodeError):
+        return []
+
+    rel = str(INDEX_FILE.relative_to(KNOWLEDGE_DIR))
+    return [
+        {
+            "file": rel,
+            "line": lineno,
+            "snippet": line.strip(),
+        }
+        for lineno, line in enumerate(lines, start=1)
+        if line.strip()
+    ]
 
 
 def search(terms: list[str]) -> list[dict]:
@@ -69,7 +83,7 @@ def main():
         sys.exit(1)
 
     if args == ["--index-only"]:
-        index_only()
+        print(json.dumps(index_only(), ensure_ascii=False, indent=2))
         return
 
     terms = args
