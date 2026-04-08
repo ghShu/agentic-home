@@ -53,7 +53,6 @@
     ],
     "defaultMode": "acceptEdits"
   },
-  "model": "sonnet",
   "hooks": {
     "SessionStart": [
       {
@@ -98,7 +97,7 @@
     "agentic-home": {
       "source": {
         "source": "directory",
-        "path": "/Users/focus/dev/agentic-home/claude/plugins"
+        "path": "__REPO_DIR__/claude/plugins"
       }
     }
   },

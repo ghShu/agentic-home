@@ -2,10 +2,20 @@
 # See: https://github.com/openai/codex
 
 # Default model
-model = "o4-mini"
+model = "gpt-5.3-codex"
 
 # Approval mode:
 #   "suggest"    — show suggestions, require approval for each change (default, safest)
 #   "auto-edit"  — apply file edits automatically, ask before running commands
 #   "full-auto"  — apply edits and run commands without asking (use with caution)
 approval-mode = "suggest"
+model_reasoning_effort = "medium"
+
+[projects."__HOME__"]
+trust_level = "trusted"
+
+[projects."__REPO_DIR__"]
+trust_level = "trusted"
+
+[notice.model_migrations]
+"gpt-5.3-codex" = "gpt-5.4"
