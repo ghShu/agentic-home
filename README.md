@@ -7,11 +7,10 @@ Clone this repo and run the install script to get:
 - Desktop notifications when a session finishes or waits for input (macOS and Linux)
 - Session context (date, directory, git status) printed at session start; [agentsview](https://github.com/wesm/agentsview) auto-starts so every session is indexed
 - `/resolve-conflicts` skill — guided git conflict resolution
-- `/create-pr` skill — create a PR, creating the remote repo first if needed
-- `/update-pr` skill — push commits and regenerate PR descriptions
+- `/create-pr` and `/update-pr` legacy aliases — forward to canonical `pr:create` / `pr:update` workflows
 - A `researcher` subagent for read-only codebase exploration
 - `agent-team` script — launch a tmux agent team with one command
-- Sensible permission rules (blocks `.env`, SSH keys, credentials, etc.)
+- Sensible permission defaults with explicit deny rules for `.env`, SSH keys, and common credential files
 - `kb` plugin — personal knowledge base with ingest → compile → query → lint workflow
 - `sessions` plugin — search past sessions and harvest insights into the knowledge base
 - `pr` plugin — full PR lifecycle (create, review, merge, comment, sync, and more)
@@ -80,7 +79,7 @@ cd ~/dev/agentic-home
 git pull
 ```
 
-Because all config files are symlinked, updates take effect immediately — no re-running the install script needed.
+Most config updates take effect immediately via symlinks. For rendered machine-local templates (`~/.claude/settings.json`, `~/.codex/config.toml`), re-run `install.sh` after template changes.
 
 ## What gets installed
 
@@ -125,6 +124,12 @@ Validate portability/template rendering:
 
 ```bash
 ~/dev/agentic-home/bin/test-portable-configs
+```
+
+Validate installer idempotency in an isolated temporary HOME:
+
+```bash
+~/dev/agentic-home/bin/test-install-idempotent
 ```
 
 ## Multi-agent

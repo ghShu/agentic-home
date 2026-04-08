@@ -230,7 +230,9 @@ mkdir -p "$KB_HOME/outputs/reports" "$KB_HOME/outputs/slides"
 
 # --- agentsview ---
 log "Checking agentsview..."
-if command -v agentsview &>/dev/null; then
+if [ "${AGENTIC_HOME_SKIP_NETWORK_INSTALLS:-0}" = "1" ]; then
+  log "Skipping agentsview install check (AGENTIC_HOME_SKIP_NETWORK_INSTALLS=1)"
+elif command -v agentsview &>/dev/null; then
   ok "agentsview already installed"
 else
   log "Installing agentsview..."

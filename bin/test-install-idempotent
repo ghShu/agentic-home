@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+fail() {
+  echo "ERROR: $*" >&2
+  exit 1
+}
+
+run_install_once() {
+  local home_dir="$1"
+  local shell_bin="$2"
+
+  printf '\n' | HOME="$home_dir" SHELL="$shell_bin" AGENTIC_HOME_SKIP_NETWORK_INSTALLS=1 \
+    bash "$REPO_DIR/install.sh" >/dev/null
+}
+
+tmp_home="$(mktemp -d)"
+trap 'rm -rf "$tmp_home"' EXIT
+
+# Minimal shell rc files expected by install.sh.
+touch "$tmp_home/.zshrc" "$tmp_home/.bashrc"
+
+echo "[1/4] First install run in isolated HOME"
+run_install_once "$tmp_home" "/bin/zsh"
+
+echo "[2/4] Second install run (idempotency)"
+run_install_once "$tmp_home" "/bin/zsh"
+
+echo "[3/4] Checking key outputs"
+[ -L "$tmp_home/CLAUDE.md" ] || fail "missing CLAUDE.md symlink"
+[ -L "$tmp_home/AGENTS.md" ] || fail "missing AGENTS.md symlink"
+[ -f "$tmp_home/.claude/settings.json" ] || fail "missing rendered Claude settings"
+[ -f "$tmp_home/.codex/config.toml" ] || fail "missing rendered Codex config"
+
+echo "[4/4] Ensuring placeholders were rendered in installed configs"
+if rg -n '__HOME__|__REPO_DIR__' "$tmp_home/.claude/settings.json" "$tmp_home/.codex/config.toml" >/dev/null; then
+  fail "placeholder token leaked into installed config"
+fi
+
+echo "PASS: install.sh idempotency check succeeded"

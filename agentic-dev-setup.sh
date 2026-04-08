@@ -169,22 +169,20 @@ fix_ssh_permissions() {
 
   chmod 700 ~/.ssh
 
-  # Private keys should be 600 (owner read/write only)
-  for key in ~/.ssh/id_rsa ~/.ssh/id_ed25519 ~/.ssh/id_ed25519_ghshu ~/.ssh/id_ed25519_jetson ~/.ssh/rsa_key.pem; do
-    if [ -f "$key" ]; then
-      chmod 600 "$key"
-      echo_i "Set 600 on $key"
-    fi
-  done
-
-  # Public keys can be 644
-  for pubkey in ~/.ssh/*.pub; do
-    [ -f "$pubkey" ] && chmod 644 "$pubkey"
+  # Generic permissions pass: all private keys -> 600, public keys -> 644.
+  local ssh_file base
+  for ssh_file in ~/.ssh/*; do
+    [ -f "$ssh_file" ] || continue
+    base="$(basename "$ssh_file")"
+    case "$base" in
+      *.pub|authorized_keys|known_hosts|config) chmod 644 "$ssh_file" ;;
+      *) chmod 600 "$ssh_file"; echo_i "Set 600 on $ssh_file" ;;
+    esac
   done
 
   echo_i "SSH permissions fixed"
-  echo_i "Testing GitHub SSH access (using gshu host alias)..."
-  ssh -T gshu 2>&1 | head -2 || true
+  echo_i "Testing GitHub SSH access..."
+  ssh -T git@github.com 2>&1 | head -2 || true
 }
 
 setup_package_manager() {
@@ -684,7 +682,13 @@ setup_agentic_home() {
   else
     mkdir -p "$HOME/dev"
     echo_i "Cloning agentic-home..."
-    git clone git@github.com:ghShu/agentic-home.git "$repo_dir" >> "$OUTPUT_FILE" 2>&1
+    if git clone git@github.com:ghShu/agentic-home.git "$repo_dir" >> "$OUTPUT_FILE" 2>&1; then
+      echo_i "Cloned via SSH"
+    else
+      echo_w "SSH clone failed — retrying via HTTPS"
+      git clone https://github.com/ghShu/agentic-home.git "$repo_dir" >> "$OUTPUT_FILE" 2>&1
+      echo_i "Cloned via HTTPS"
+    fi
   fi
 
   echo_i "Running install.sh..."
