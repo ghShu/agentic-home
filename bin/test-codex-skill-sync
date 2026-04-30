@@ -1,0 +1,112 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SYNC_SCRIPT="$REPO_DIR/bin/sync-codex-from-claude"
+MAP_FILE="$REPO_DIR/codex/generated/MAPPING.md"
+CLAUDE_DIR="$REPO_DIR/claude"
+OUT_SKILLS="$REPO_DIR/codex/generated/skills"
+OUT_PLUGINS="$REPO_DIR/codex/generated/plugins"
+OUT_AGENTS="$REPO_DIR/codex/generated/agents"
+OUT_MARKETPLACE="$OUT_PLUGINS/.agents/plugins/marketplace.json"
+
+fail() {
+  echo "ERROR: $*" >&2
+  exit 1
+}
+
+assert_file() {
+  local f="$1"
+  [ -f "$f" ] || fail "missing file: $f"
+}
+
+assert_dir() {
+  local d="$1"
+  [ -d "$d" ] || fail "missing directory: $d"
+}
+
+echo "[1/7] Running sync script"
+[ -x "$SYNC_SCRIPT" ] || fail "sync script is not executable: $SYNC_SCRIPT"
+"$SYNC_SCRIPT" >/dev/null
+
+echo "[2/7] Checking generated roots"
+assert_dir "$OUT_SKILLS"
+assert_dir "$OUT_PLUGINS"
+assert_dir "$OUT_AGENTS"
+assert_file "$MAP_FILE"
+assert_file "$OUT_MARKETPLACE"
+
+skill_count="$(find "$OUT_SKILLS" -mindepth 2 -maxdepth 2 -name SKILL.md | wc -l | tr -d ' ')"
+[ "$skill_count" -gt 0 ] || fail "no generated skills found in $OUT_SKILLS"
+echo "  Generated skills: $skill_count"
+
+plugin_count="$(find "$OUT_PLUGINS" -mindepth 2 -maxdepth 3 -path '*/.codex-plugin/plugin.json' | wc -l | tr -d ' ')"
+[ "$plugin_count" -gt 0 ] || fail "no generated plugins found in $OUT_PLUGINS"
+echo "  Generated plugins: $plugin_count"
+
+agent_count="$(find "$OUT_AGENTS" -maxdepth 1 -type f -name '*.md' | wc -l | tr -d ' ')"
+echo "  Generated agents: $agent_count"
+
+echo "[3/7] Verifying every Claude skill has a mapping entry"
+missing_map=0
+while IFS= read -r src; do
+  rel="${src#"$REPO_DIR/"}"
+  if ! grep -Fq "\`$rel\` -> \`codex/generated/skills/" "$MAP_FILE"; then
+    echo "  Missing mapping for: $rel" >&2
+    missing_map=1
+  fi
+done < <(find "$CLAUDE_DIR/skills" "$CLAUDE_DIR/plugins" -type f -name SKILL.md | sort)
+[ "$missing_map" -eq 0 ] || fail "mapping coverage failed"
+
+echo "[4/7] Verifying every Claude plugin manifest has a translated codex plugin mapping"
+missing_plugin_map=0
+while IFS= read -r manifest; do
+  rel="${manifest#"$REPO_DIR/"}"
+  if ! grep -Fq "\`$rel\` -> \`codex/generated/plugins/" "$MAP_FILE"; then
+    echo "  Missing plugin mapping for: $rel" >&2
+    missing_plugin_map=1
+  fi
+done < <(find "$CLAUDE_DIR/plugins" -type f -path '*/.claude-plugin/plugin.json' | sort)
+[ "$missing_plugin_map" -eq 0 ] || fail "plugin mapping coverage failed"
+
+echo "[5/7] Verifying every top-level Claude agent has a mapping entry"
+missing_agent_map=0
+if [ -d "$CLAUDE_DIR/agents" ]; then
+  while IFS= read -r agent; do
+    rel="${agent#"$REPO_DIR/"}"
+    if ! grep -Fq "\`$rel\` -> \`codex/generated/agents/" "$MAP_FILE"; then
+      echo "  Missing agent mapping for: $rel" >&2
+      missing_agent_map=1
+    fi
+  done < <(find "$CLAUDE_DIR/agents" -maxdepth 1 -type f -name '*.md' | sort)
+fi
+[ "$missing_agent_map" -eq 0 ] || fail "agent mapping coverage failed"
+
+echo "[6/7] Spot-checking generated skill format"
+bad_generated=0
+while IFS= read -r generated; do
+  if ! awk 'NR==1 && $0=="---" {ok=1} END {exit(ok?0:1)}' "$generated"; then
+    echo "  Missing YAML frontmatter start: ${generated#"$REPO_DIR/"}" >&2
+    bad_generated=1
+  fi
+  if ! grep -Fq "Generated from \`" "$generated"; then
+    echo "  Missing provenance header: ${generated#"$REPO_DIR/"}" >&2
+    bad_generated=1
+  fi
+done < <(find "$OUT_SKILLS" -mindepth 2 -maxdepth 2 -name SKILL.md | sort)
+[ "$bad_generated" -eq 0 ] || fail "generated skill format validation failed"
+
+echo "[7/7] Verifying Codex marketplace manifest is well-formed JSON with a plugins array"
+python3 -c "
+import json, sys
+with open('$OUT_MARKETPLACE') as f:
+    data = json.load(f)
+if not isinstance(data.get('plugins'), list) or not data['plugins']:
+    sys.exit('marketplace.json missing non-empty plugins array')
+for entry in data['plugins']:
+    for key in ('name', 'source'):
+        if key not in entry:
+            sys.exit('marketplace plugin entry missing %s: %r' % (key, entry))
+" || fail "marketplace.json validation failed"
+
+echo "PASS: codex skill sync validation succeeded"

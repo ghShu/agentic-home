@@ -66,6 +66,34 @@ symlink() {
   LINKED+=("$dst → $src")
 }
 
+# Render a template file by replacing runtime path tokens.
+render_template() {
+  local src="$1"
+  local dst="$2"
+  local tmp
+
+  tmp="$(mktemp)"
+  awk -v home="$HOME" -v repo="$REPO_DIR" '
+    { gsub(/__HOME__/, home); gsub(/__REPO_DIR__/, repo); print }
+  ' "$src" > "$tmp"
+
+  if [ -f "$dst" ] && cmp -s "$tmp" "$dst"; then
+    rm -f "$tmp"
+    SKIPPED+=("$dst")
+    return
+  fi
+
+  if [ -e "$dst" ] || [ -L "$dst" ]; then
+    mkdir -p "$BACKUP_DIR"
+    mv "$dst" "$BACKUP_DIR/"
+    BACKED_UP+=("$dst")
+  fi
+
+  mkdir -p "$(dirname "$dst")"
+  mv "$tmp" "$dst"
+  LINKED+=("$dst ← rendered from $src")
+}
+
 echo ""
 echo "Installing agentic-home configuration..."
 echo "Repo: $REPO_DIR"
@@ -103,8 +131,8 @@ for plugin_bin in "$REPO_DIR/claude/plugins"/*/bin/*; do
 done
 
 # --- Claude Code settings ---
-log "Linking Claude Code settings..."
-symlink "$REPO_DIR/claude/settings.json" "$HOME/.claude/settings.json"
+log "Rendering Claude Code settings..."
+render_template "$REPO_DIR/claude/settings.json" "$HOME/.claude/settings.json"
 
 # --- Hooks ---
 log "Linking hooks..."
@@ -129,9 +157,7 @@ if [ -d "$REPO_DIR/claude/plugins" ] && command -v claude &>/dev/null; then
   for plugin_dir in "$REPO_DIR/claude/plugins"/*/; do
     [ -f "$plugin_dir/.claude-plugin/plugin.json" ] || continue
     plugin_name="$(basename "$plugin_dir")"
-    install_out=$(claude plugins install "${plugin_name}@agentic-home" 2>&1)
-    install_exit=$?
-    if [ $install_exit -eq 0 ]; then
+    if install_out=$(claude plugins install "${plugin_name}@agentic-home" 2>&1); then
       ok "Installed ${plugin_name}@agentic-home"
     elif echo "$install_out" | grep -qi "already installed"; then
       ok "${plugin_name}@agentic-home already installed"
@@ -155,16 +181,52 @@ done
 
 # --- Codex (only if installed) ---
 if command -v codex &>/dev/null; then
-  log "Linking Codex configuration..."
+  log "Rendering Codex configuration..."
   symlink "$REPO_DIR/codex/instructions.md" "$HOME/.codex/instructions.md"
-  symlink "$REPO_DIR/codex/config.toml"     "$HOME/.codex/config.toml"
+  render_template "$REPO_DIR/codex/config.toml" "$HOME/.codex/config.toml"
+
+  if [ -x "$REPO_DIR/bin/sync-codex-from-claude" ]; then
+    log "Syncing Claude skills/plugins into Codex format..."
+    "$REPO_DIR/bin/sync-codex-from-claude" >/dev/null
+  else
+    warn "Missing $REPO_DIR/bin/sync-codex-from-claude — skipping Codex skill sync"
+  fi
+
+  log "Linking Codex user skills..."
+  mkdir -p "$HOME/.agents/skills"
+  for skill_dir in "$REPO_DIR/codex/generated/skills"/*/; do
+    [ -d "$skill_dir" ] || continue
+    skill_name="$(basename "$skill_dir")"
+    symlink "$skill_dir" "$HOME/.agents/skills/$skill_name"
+  done
+
+  log "Linking Codex user agents..."
+  mkdir -p "$HOME/.agents/agents"
+  for agent_file in "$REPO_DIR/codex/generated/agents"/*.md; do
+    [ -f "$agent_file" ] || continue
+    agent_name="$(basename "$agent_file")"
+    symlink "$agent_file" "$HOME/.agents/agents/$agent_name"
+  done
+
+  if [ -f "$REPO_DIR/codex/generated/plugins/.agents/plugins/marketplace.json" ]; then
+    log "Registering Codex marketplace..."
+    if mp_out=$(codex plugin marketplace add "$REPO_DIR/codex/generated/plugins" 2>&1); then
+      if echo "$mp_out" | grep -qi "already added"; then
+        ok "Codex marketplace already registered"
+      else
+        ok "Codex marketplace registered"
+      fi
+    else
+      warn "Failed to register Codex marketplace: $mp_out"
+    fi
+  fi
 
   # Log in with API key from ~/.openai.env if not already logged in
   if codex login status 2>&1 | grep -q "API key"; then
     ok "Codex already logged in"
   elif [ -f "$HOME/.openai.env" ]; then
     log "Logging in to Codex with API key from ~/.openai.env..."
-    OPENAI_KEY=$(grep -E 'OPENAI_API_KEY=' "$HOME/.openai.env" | cut -d'"' -f2 | tr -d "'" | tr -d ' ')
+    OPENAI_KEY=$(grep -E 'OPENAI_API_KEY=' "$HOME/.openai.env" | sed "s/.*OPENAI_API_KEY=['\"]*//" | tr -d "'\"")
     if [ -n "$OPENAI_KEY" ]; then
       echo "$OPENAI_KEY" | codex login --with-api-key && ok "Codex logged in"
     else
@@ -189,7 +251,9 @@ mkdir -p "$KB_HOME/outputs/reports" "$KB_HOME/outputs/slides"
 
 # --- agentsview ---
 log "Checking agentsview..."
-if command -v agentsview &>/dev/null; then
+if [ "${AGENTIC_HOME_SKIP_NETWORK_INSTALLS:-0}" = "1" ]; then
+  log "Skipping agentsview install check (AGENTIC_HOME_SKIP_NETWORK_INSTALLS=1)"
+elif command -v agentsview &>/dev/null; then
   ok "agentsview already installed"
 else
   log "Installing agentsview..."

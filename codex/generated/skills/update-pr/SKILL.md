@@ -3,6 +3,9 @@ name: update-pr
 description: Legacy alias for pr:update. Use the canonical pr:update skill for PR updates.
 ---
 
+Generated from `claude/skills/update-pr/SKILL.md` by `bin/sync-codex-from-claude`.
+
+
 # update-pr (Legacy Alias)
 
 This skill is maintained as a compatibility alias.

@@ -3,6 +3,9 @@ name: create-pr
 description: Legacy alias for pr:create. Use the canonical pr:create skill for PR creation.
 ---
 
+Generated from `claude/skills/create-pr/SKILL.md` by `bin/sync-codex-from-claude`.
+
+
 # create-pr (Legacy Alias)
 
 This skill is maintained as a compatibility alias.

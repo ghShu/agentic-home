@@ -1,0 +1,23 @@
+# Wiki Index
+
+This file is the master index of the knowledge base wiki.
+It is maintained by the LLM — do not edit manually.
+See KNOWLEDGE.md for category definitions and entry format.
+
+---
+
+## Concepts
+
+<!-- Concept articles will appear here after the first /kb:compile run -->
+
+## Entities
+
+<!-- Entity articles (specific tools, models, frameworks) will appear here -->
+
+## Syntheses
+
+<!-- Articles filed from query answers will appear here -->
+
+## Sources
+
+<!-- Source summary articles will appear here (optional) -->

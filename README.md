@@ -7,14 +7,14 @@ Clone this repo and run the install script to get:
 - Desktop notifications when a session finishes or waits for input (macOS and Linux)
 - Session context (date, directory, git status) printed at session start; [agentsview](https://github.com/wesm/agentsview) auto-starts so every session is indexed
 - `/resolve-conflicts` skill — guided git conflict resolution
-- `/create-pr` skill — create a PR, creating the remote repo first if needed
-- `/update-pr` skill — push commits and regenerate PR descriptions
+- `/create-pr` and `/update-pr` legacy aliases — forward to canonical `pr:create` / `pr:update` workflows
 - A `researcher` subagent for read-only codebase exploration
 - `agent-team` script — launch a tmux agent team with one command
-- Sensible permission rules (blocks `.env`, SSH keys, credentials, etc.)
+- Sensible permission defaults with explicit deny rules for `.env`, SSH keys, and common credential files
 - `kb` plugin — personal knowledge base with ingest → compile → query → lint workflow
 - `sessions` plugin — search past sessions and harvest insights into the knowledge base
 - `pr` plugin — full PR lifecycle (create, review, merge, comment, sync, and more)
+- Automatic Claude → Codex skill translation for minimal-overhead cross-tool reuse
 
 ## Setup
 
@@ -79,7 +79,7 @@ cd ~/dev/agentic-home
 git pull
 ```
 
-Because all config files are symlinked, updates take effect immediately — no re-running the install script needed.
+Most config updates take effect immediately via symlinks. For rendered machine-local templates (`~/.claude/settings.json`, `~/.codex/config.toml`), re-run `install.sh` after template changes.
 
 ## What gets installed
 
@@ -87,7 +87,7 @@ Because all config files are symlinked, updates take effect immediately — no r
 |-----------|-------------|---------|
 | `CLAUDE.md` | `~/CLAUDE.md` | Global instructions for Claude Code ([docs](https://docs.anthropic.com/en/docs/claude-code/memory)) |
 | `AGENTS.md` | `~/AGENTS.md` | Cross-agent context file ([agents.md spec](https://agents.md/)) |
-| `claude/settings.json` | `~/.claude/settings.json` | Claude Code config: permissions, hooks, features ([docs](https://docs.anthropic.com/en/docs/claude-code/settings)) |
+| `claude/settings.json` | `~/.claude/settings.json` | Claude Code config template rendered at install time with machine-local paths ([docs](https://docs.anthropic.com/en/docs/claude-code/settings)) |
 | `claude/hooks/session-start.sh` | `~/.claude/hooks/` | Prints context at session start ([hooks docs](https://docs.anthropic.com/en/docs/claude-code/hooks)) |
 | `claude/hooks/notify.sh` | `~/.claude/hooks/` | Desktop notification on stop/idle (macOS via osascript, Linux via notify-send) |
 | `claude/skills/resolve-conflicts/` | `~/.claude/skills/` | `/resolve-conflicts` slash command ([skills docs](https://docs.anthropic.com/en/docs/claude-code/skills)) |
@@ -96,7 +96,44 @@ Because all config files are symlinked, updates take effect immediately — no r
 | `claude/agents/researcher.md` | `~/.claude/agents/` | Read-only researcher subagent ([subagents docs](https://docs.anthropic.com/en/docs/claude-code/sub-agents)) |
 | `bin/agent-team` | `~/bin/agent-team` | Launch a tmux agent team session |
 | `codex/instructions.md` | `~/.codex/instructions.md` | Codex global system prompt |
-| `codex/config.toml` | `~/.codex/config.toml` | Codex model and approval mode |
+| `codex/config.toml` | `~/.codex/config.toml` | Codex config template rendered at install time with machine-local trust paths |
+| `bin/sync-codex-from-claude` + `codex/generated/skills/` | `~/.agents/skills/*` | Generated Codex skills translated from `claude/skills/` and `claude/plugins/*/skills/` |
+| `codex/generated/agents/` | `~/.agents/agents/*` | Top-level Claude subagents translated for Codex |
+| `codex/generated/plugins/.agents/plugins/marketplace.json` | `codex plugin marketplace add` | Codex marketplace mirroring `claude/plugins/.claude-plugin/marketplace.json` |
+
+## Codex translation sync
+
+To keep Codex skills in sync with Claude skills/plugins, run:
+
+```bash
+~/dev/agentic-home/bin/sync-codex-from-claude
+```
+
+This regenerates:
+- `codex/generated/skills/` (Codex-ready `SKILL.md` directories)
+- `codex/generated/agents/` (top-level Claude agents in Codex location)
+- `codex/generated/plugins/` (translated plugin layout, including `.agents/plugins/marketplace.json`)
+- `codex/generated/MAPPING.md` (source-to-generated mapping)
+
+`install.sh` runs this sync automatically (when Codex is installed), symlinks generated skills into `~/.agents/skills/`, symlinks translated agents into `~/.agents/agents/`, and registers the marketplace via `codex plugin marketplace add`.
+
+Validate translation coverage and generated artifacts:
+
+```bash
+~/dev/agentic-home/bin/test-codex-skill-sync
+```
+
+Validate portability/template rendering:
+
+```bash
+~/dev/agentic-home/bin/test-portable-configs
+```
+
+Validate installer idempotency in an isolated temporary HOME:
+
+```bash
+~/dev/agentic-home/bin/test-install-idempotent
+```
 
 ## Multi-agent
 

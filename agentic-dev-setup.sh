@@ -169,22 +169,20 @@ fix_ssh_permissions() {
 
   chmod 700 ~/.ssh
 
-  # Private keys should be 600 (owner read/write only)
-  for key in ~/.ssh/id_rsa ~/.ssh/id_ed25519 ~/.ssh/id_ed25519_ghshu ~/.ssh/id_ed25519_jetson ~/.ssh/rsa_key.pem; do
-    if [ -f "$key" ]; then
-      chmod 600 "$key"
-      echo_i "Set 600 on $key"
-    fi
-  done
-
-  # Public keys can be 644
-  for pubkey in ~/.ssh/*.pub; do
-    [ -f "$pubkey" ] && chmod 644 "$pubkey"
+  # Generic permissions pass: all private keys -> 600, public keys -> 644.
+  local ssh_file base
+  for ssh_file in ~/.ssh/*; do
+    [ -f "$ssh_file" ] || continue
+    base="$(basename "$ssh_file")"
+    case "$base" in
+      *.pub|authorized_keys|known_hosts|config) chmod 644 "$ssh_file" ;;
+      *) chmod 600 "$ssh_file"; echo_i "Set 600 on $ssh_file" ;;
+    esac
   done
 
   echo_i "SSH permissions fixed"
-  echo_i "Testing GitHub SSH access (using gshu host alias)..."
-  ssh -T gshu 2>&1 | head -2 || true
+  echo_i "Testing GitHub SSH access..."
+  ssh -T git@github.com 2>&1 | head -2 || true
 }
 
 setup_package_manager() {
@@ -622,6 +620,57 @@ install_claude_code() {
   echo_i "Claude Code installed: $(claude --version 2>/dev/null || echo 'version unknown')"
 }
 
+install_codex() {
+  echo_t "Installing OpenAI Codex CLI"
+
+  if _command_exists codex; then
+    echo_i "Codex already installed — skipping"
+    return 0
+  fi
+
+  # Ensure nvm/node is loaded
+  _load_nvm
+
+  if ! _command_exists npm; then
+    echo_w "npm not found — skipping Codex install (run install_node first)"
+    return 0
+  fi
+
+  echo_i "Installing @openai/codex globally..."
+  npm install -g @openai/codex >> "$OUTPUT_FILE" 2>&1
+  echo_i "Codex installed: $(codex --version 2>/dev/null || echo 'version unknown')"
+}
+
+link_codex_user_skills() {
+  local repo_dir="$1"
+
+  if ! _command_exists codex; then
+    echo_i "Codex not installed — skipping Codex skill linking"
+    return 0
+  fi
+
+  local sync_script="$repo_dir/bin/sync-codex-from-claude"
+  if [ ! -x "$sync_script" ]; then
+    echo_w "Missing $sync_script — skipping Codex skill linking"
+    return 0
+  fi
+
+  echo_i "Syncing Claude skills/plugins into Codex format..."
+  "$sync_script" >> "$OUTPUT_FILE" 2>&1
+
+  echo_i "Linking generated Codex skills to ~/.agents/skills..."
+  mkdir -p "$HOME/.agents/skills"
+  local count=0
+  local skill_dir skill_name
+  for skill_dir in "$repo_dir"/codex/generated/skills/*/; do
+    [ -d "$skill_dir" ] || continue
+    skill_name="$(basename "$skill_dir")"
+    ln -sfn "$skill_dir" "$HOME/.agents/skills/$skill_name"
+    count=$((count + 1))
+  done
+  echo_i "Linked $count Codex skill(s) into ~/.agents/skills"
+}
+
 setup_agentic_home() {
   echo_t "Setting up agentic-home"
 
@@ -633,11 +682,20 @@ setup_agentic_home() {
   else
     mkdir -p "$HOME/dev"
     echo_i "Cloning agentic-home..."
-    git clone git@github.com:ghShu/agentic-home.git "$repo_dir" >> "$OUTPUT_FILE" 2>&1
+    if git clone git@github.com:ghShu/agentic-home.git "$repo_dir" >> "$OUTPUT_FILE" 2>&1; then
+      echo_i "Cloned via SSH"
+    else
+      echo_w "SSH clone failed — retrying via HTTPS"
+      git clone https://github.com/ghShu/agentic-home.git "$repo_dir" >> "$OUTPUT_FILE" 2>&1
+      echo_i "Cloned via HTTPS"
+    fi
   fi
 
   echo_i "Running install.sh..."
   bash "$repo_dir/install.sh"
+
+  # Keep generated Codex skills versioned in-repo, but globally discoverable for Codex.
+  link_codex_user_skills "$repo_dir"
 }
 
 print_summary() {
@@ -678,6 +736,7 @@ STEPS=(
   setup_mac_defaults
   install_node
   install_claude_code
+  install_codex
   setup_agentic_home
 )
 
