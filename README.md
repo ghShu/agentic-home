@@ -98,6 +98,8 @@ Most config updates take effect immediately via symlinks. For rendered machine-l
 | `codex/instructions.md` | `~/.codex/instructions.md` | Codex global system prompt |
 | `codex/config.toml` | `~/.codex/config.toml` | Codex config template rendered at install time with machine-local trust paths |
 | `bin/sync-codex-from-claude` + `codex/generated/skills/` | `~/.agents/skills/*` | Generated Codex skills translated from `claude/skills/` and `claude/plugins/*/skills/` |
+| `codex/generated/agents/` | `~/.agents/agents/*` | Top-level Claude subagents translated for Codex |
+| `codex/generated/plugins/.agents/plugins/marketplace.json` | `codex plugin marketplace add` | Codex marketplace mirroring `claude/plugins/.claude-plugin/marketplace.json` |
 
 ## Codex translation sync
 
@@ -109,10 +111,11 @@ To keep Codex skills in sync with Claude skills/plugins, run:
 
 This regenerates:
 - `codex/generated/skills/` (Codex-ready `SKILL.md` directories)
-- `codex/generated/plugins/` (translated plugin layout)
+- `codex/generated/agents/` (top-level Claude agents in Codex location)
+- `codex/generated/plugins/` (translated plugin layout, including `.agents/plugins/marketplace.json`)
 - `codex/generated/MAPPING.md` (source-to-generated mapping)
 
-`install.sh` runs this sync automatically (when Codex is installed) and symlinks generated skills into `~/.agents/skills/`.
+`install.sh` runs this sync automatically (when Codex is installed), symlinks generated skills into `~/.agents/skills/`, symlinks translated agents into `~/.agents/agents/`, and registers the marketplace via `codex plugin marketplace add`.
 
 Validate translation coverage and generated artifacts:
 

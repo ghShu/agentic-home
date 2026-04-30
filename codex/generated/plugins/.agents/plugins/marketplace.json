@@ -1,0 +1,35 @@
+{
+  "name": "agentic-home",
+  "owner": {
+    "name": "agentic-home"
+  },
+  "plugins": [
+    {
+      "name": "pr",
+      "source": "./pr",
+      "description": "Comprehensive PR operations: create, review, merge, comment, and more",
+      "version": "1.0.0",
+      "author": {
+        "name": "agentic-home"
+      }
+    },
+    {
+      "name": "kb",
+      "source": "./kb",
+      "description": "Personal knowledge base operations: ingest, compile, lint, and query",
+      "version": "1.0.0",
+      "author": {
+        "name": "agentic-home"
+      }
+    },
+    {
+      "name": "sessions",
+      "source": "./sessions",
+      "description": "Browse, search, and harvest insights from agent sessions",
+      "version": "1.0.0",
+      "author": {
+        "name": "agentic-home"
+      }
+    }
+  ]
+}
