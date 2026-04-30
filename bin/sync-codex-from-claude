@@ -6,6 +6,7 @@ CLAUDE_DIR="$REPO_DIR/claude"
 OUT_ROOT="$REPO_DIR/codex/generated"
 OUT_SKILLS="$OUT_ROOT/skills"
 OUT_PLUGINS="$OUT_ROOT/plugins"
+OUT_AGENTS="$OUT_ROOT/agents"
 MAP_FILE="$OUT_ROOT/MAPPING.md"
 
 slugify() {
@@ -66,8 +67,8 @@ write_skill() {
 }
 
 mkdir -p "$OUT_ROOT"
-rm -rf "$OUT_SKILLS" "$OUT_PLUGINS"
-mkdir -p "$OUT_SKILLS" "$OUT_PLUGINS"
+rm -rf "$OUT_SKILLS" "$OUT_PLUGINS" "$OUT_AGENTS"
+mkdir -p "$OUT_SKILLS" "$OUT_PLUGINS" "$OUT_AGENTS"
 
 cat > "$MAP_FILE" <<'EOF'
 # Claude -> Codex Mapping
@@ -103,6 +104,21 @@ done
 
 cat >> "$MAP_FILE" <<'EOF'
 
+## Agents
+
+EOF
+
+# Translate top-level Claude agents (verbatim — Codex reads the same YAML frontmatter format).
+for agent_file in "$CLAUDE_DIR/agents"/*.md; do
+  [ -f "$agent_file" ] || continue
+  agent_name="$(basename "$agent_file")"
+  rel_source="${agent_file#"$REPO_DIR/"}"
+  cp "$agent_file" "$OUT_AGENTS/$agent_name"
+  echo "- \`$rel_source\` -> \`codex/generated/agents/$agent_name\`" >> "$MAP_FILE"
+done
+
+cat >> "$MAP_FILE" <<'EOF'
+
 ## Plugins
 
 EOF
@@ -127,8 +143,21 @@ for plugin_manifest in "$CLAUDE_DIR/plugins"/*/.claude-plugin/plugin.json; do
   if [ -d "$plugin_dir/bin" ]; then
     cp -R "$plugin_dir/bin" "$out_plugin/bin"
   fi
+  if [ -d "$plugin_dir/seed" ]; then
+    cp -R "$plugin_dir/seed" "$out_plugin/seed"
+  fi
 
   echo "- \`$rel_source\` -> \`codex/generated/plugins/$plugin_name/.codex-plugin/plugin.json\`" >> "$MAP_FILE"
 done
+
+# Translate the Claude marketplace manifest into the Codex location so
+# `codex plugin marketplace add codex/generated/plugins` registers it.
+claude_marketplace="$CLAUDE_DIR/plugins/.claude-plugin/marketplace.json"
+if [ -f "$claude_marketplace" ]; then
+  mkdir -p "$OUT_PLUGINS/.agents/plugins"
+  cp "$claude_marketplace" "$OUT_PLUGINS/.agents/plugins/marketplace.json"
+  rel_source="${claude_marketplace#"$REPO_DIR/"}"
+  echo "- \`$rel_source\` -> \`codex/generated/plugins/.agents/plugins/marketplace.json\`" >> "$MAP_FILE"
+fi
 
 echo "Synced Claude assets into codex/generated"

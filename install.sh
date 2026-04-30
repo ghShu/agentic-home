@@ -200,6 +200,27 @@ if command -v codex &>/dev/null; then
     symlink "$skill_dir" "$HOME/.agents/skills/$skill_name"
   done
 
+  log "Linking Codex user agents..."
+  mkdir -p "$HOME/.agents/agents"
+  for agent_file in "$REPO_DIR/codex/generated/agents"/*.md; do
+    [ -f "$agent_file" ] || continue
+    agent_name="$(basename "$agent_file")"
+    symlink "$agent_file" "$HOME/.agents/agents/$agent_name"
+  done
+
+  if [ -f "$REPO_DIR/codex/generated/plugins/.agents/plugins/marketplace.json" ]; then
+    log "Registering Codex marketplace..."
+    if mp_out=$(codex plugin marketplace add "$REPO_DIR/codex/generated/plugins" 2>&1); then
+      if echo "$mp_out" | grep -qi "already added"; then
+        ok "Codex marketplace already registered"
+      else
+        ok "Codex marketplace registered"
+      fi
+    else
+      warn "Failed to register Codex marketplace: $mp_out"
+    fi
+  fi
+
   # Log in with API key from ~/.openai.env if not already logged in
   if codex login status 2>&1 | grep -q "API key"; then
     ok "Codex already logged in"

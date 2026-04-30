@@ -25,8 +25,13 @@ Do not edit generated files by hand.
 - `claude/plugins/sessions/skills/harvest/SKILL.md` -> `codex/generated/skills/sessions-harvest/SKILL.md`
 - `claude/plugins/sessions/skills/search/SKILL.md` -> `codex/generated/skills/sessions-search/SKILL.md`
 
+## Agents
+
+- `claude/agents/researcher.md` -> `codex/generated/agents/researcher.md`
+
 ## Plugins
 
 - `claude/plugins/kb/.claude-plugin/plugin.json` -> `codex/generated/plugins/kb/.codex-plugin/plugin.json`
 - `claude/plugins/pr/.claude-plugin/plugin.json` -> `codex/generated/plugins/pr/.codex-plugin/plugin.json`
 - `claude/plugins/sessions/.claude-plugin/plugin.json` -> `codex/generated/plugins/sessions/.codex-plugin/plugin.json`
+- `claude/plugins/.claude-plugin/marketplace.json` -> `codex/generated/plugins/.agents/plugins/marketplace.json`
