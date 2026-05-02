@@ -26,6 +26,7 @@
       "Bash(gh api *)",
       "Bash(gh auth status)",
       "Bash(gh co *)",
+      "Read(~/.ssh/config)",
       "Read(*)",
       "Write(*)",
       "Edit(*)",
@@ -44,7 +45,7 @@
       "Read(**/*.key)",
       "Read(**/secrets/**)",
       "Read(**/credentials/**)",
-      "Read(~/.ssh/**)",
+      "Read(~/.ssh/id_*)",
       "Read(~/.gnupg/**)",
       "Read(~/.aws/**)",
       "Read(~/.azure/**)",
@@ -62,6 +63,7 @@
     ],
     "defaultMode": "acceptEdits"
   },
+  "model": "opus[1m]",
   "hooks": {
     "SessionStart": [
       {
@@ -106,7 +108,7 @@
     "agentic-home": {
       "source": {
         "source": "directory",
-        "path": "__REPO_DIR__/claude/plugins"
+        "path": "/Users/guanghua.shu/dev/agentic-home/claude/plugins"
       }
     }
   },
