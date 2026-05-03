@@ -108,7 +108,7 @@
     "agentic-home": {
       "source": {
         "source": "directory",
-        "path": "/Users/guanghua.shu/dev/agentic-home/claude/plugins"
+        "path": "__REPO_DIR__/claude/plugins"
       }
     }
   },

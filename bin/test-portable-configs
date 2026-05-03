@@ -15,24 +15,30 @@ render_template() {
   ' "$src"
 }
 
-echo "[1/4] Checking tracked configs for hardcoded local user path"
-if rg -n '/Users/focus' "$REPO_DIR/claude/settings.json" "$REPO_DIR/codex/config.toml" >/dev/null; then
-  fail "hardcoded /Users/focus path found in tracked config templates"
+echo "[1/5] Checking tracked configs for any hardcoded /Users/<owner> path"
+if rg -n '/Users/[a-zA-Z][a-zA-Z0-9_.-]*' "$REPO_DIR/claude/settings.json" "$REPO_DIR/codex/config.toml" >/dev/null; then
+  rg -n '/Users/[a-zA-Z][a-zA-Z0-9_.-]*' "$REPO_DIR/claude/settings.json" "$REPO_DIR/codex/config.toml" >&2
+  fail "tracked templates contain a hardcoded /Users/... path; use __HOME__ or __REPO_DIR__"
 fi
 
 tmp_dir="$(mktemp -d)"
 trap 'rm -rf "$tmp_dir"' EXIT
 
-echo "[2/4] Rendering templates with runtime paths"
+echo "[2/5] Rendering templates with runtime paths"
 render_template "$REPO_DIR/claude/settings.json" > "$tmp_dir/settings.json"
 render_template "$REPO_DIR/codex/config.toml" > "$tmp_dir/config.toml"
 
-echo "[3/4] Verifying placeholders are fully rendered"
+echo "[3/5] Verifying placeholders are fully rendered"
 if rg -n '__HOME__|__REPO_DIR__' "$tmp_dir/settings.json" "$tmp_dir/config.toml" >/dev/null; then
   fail "unrendered placeholders remain in rendered output"
 fi
 
-echo "[4/4] Validating rendered JSON syntax"
+echo "[4/5] Validating rendered JSON syntax"
 python3 -m json.tool "$tmp_dir/settings.json" >/dev/null
+
+echo "[5/5] Verifying marketplace path uses __REPO_DIR__ placeholder"
+if ! rg -nF '"path": "__REPO_DIR__/claude/plugins"' "$REPO_DIR/claude/settings.json" >/dev/null; then
+  fail "claude/settings.json marketplace 'path' must be \"__REPO_DIR__/claude/plugins\""
+fi
 
 echo "PASS: portable config templates render correctly"

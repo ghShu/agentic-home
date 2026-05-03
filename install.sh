@@ -267,9 +267,11 @@ fi
 # --- Git tracking ---
 log "Ensuring default branch has upstream tracking..."
 DEFAULT_BRANCH=$(git -C "$REPO_DIR" symbolic-ref --short HEAD 2>/dev/null || echo "main")
-git -C "$REPO_DIR" branch --set-upstream-to=origin/"$DEFAULT_BRANCH" "$DEFAULT_BRANCH" 2>/dev/null \
-  && ok "Tracking set: $DEFAULT_BRANCH → origin/$DEFAULT_BRANCH" \
-  || warn "Could not set tracking for $DEFAULT_BRANCH (remote may not be configured yet)"
+if git -C "$REPO_DIR" branch --set-upstream-to=origin/"$DEFAULT_BRANCH" "$DEFAULT_BRANCH" 2>/dev/null; then
+  ok "Tracking set: $DEFAULT_BRANCH → origin/$DEFAULT_BRANCH"
+else
+  warn "Could not set tracking for $DEFAULT_BRANCH (remote may not be configured yet)"
+fi
 
 # --- Summary ---
 echo ""
