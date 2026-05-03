@@ -32,10 +32,16 @@ echo "[3/4] Checking key outputs"
 [ -L "$tmp_home/CLAUDE.md" ] || fail "missing CLAUDE.md symlink"
 [ -L "$tmp_home/AGENTS.md" ] || fail "missing AGENTS.md symlink"
 [ -f "$tmp_home/.claude/settings.json" ] || fail "missing rendered Claude settings"
-[ -f "$tmp_home/.codex/config.toml" ] || fail "missing rendered Codex config"
+
+# install.sh only renders Codex config when `codex` is on PATH; mirror that.
+if command -v codex >/dev/null 2>&1; then
+  [ -f "$tmp_home/.codex/config.toml" ] || fail "missing rendered Codex config"
+fi
 
 echo "[4/4] Ensuring placeholders were rendered in installed configs"
-if rg -n '__HOME__|__REPO_DIR__' "$tmp_home/.claude/settings.json" "$tmp_home/.codex/config.toml" >/dev/null; then
+configs_to_check=("$tmp_home/.claude/settings.json")
+[ -f "$tmp_home/.codex/config.toml" ] && configs_to_check+=("$tmp_home/.codex/config.toml")
+if rg -n '__HOME__|__REPO_DIR__' "${configs_to_check[@]}" >/dev/null; then
   fail "placeholder token leaked into installed config"
 fi
 
