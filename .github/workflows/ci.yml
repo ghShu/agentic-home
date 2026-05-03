@@ -8,44 +8,29 @@ on:
       - codex-claude-bridge-min-overhead
 
 jobs:
-  lint-and-smoke:
+  lint:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Install Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y shellcheck ripgrep python3
+        run: sudo apt-get update && sudo apt-get install -y shellcheck ripgrep python3
 
-      - name: Bash Syntax Check
+      - name: Lint (bash syntax + shellcheck + python)
         run: |
-          bash -n install.sh
-          bash -n agentic-dev-setup.sh
-          bash -n bin/agent-team
-          bash -n bin/sync-codex-from-claude
-          bash -n bin/test-codex-skill-sync
-          bash -n bin/test-portable-configs
-          bash -n bin/test-install-idempotent
-          bash -n claude/hooks/session-start.sh
-          bash -n claude/hooks/notify.sh
+          chmod +x bin/test-lint
+          ./bin/test-lint
 
-      - name: ShellCheck
-        run: |
-          shellcheck install.sh \
-            agentic-dev-setup.sh \
-            bin/agent-team \
-            bin/sync-codex-from-claude \
-            bin/test-codex-skill-sync \
-            bin/test-portable-configs \
-            bin/test-install-idempotent \
-            claude/hooks/session-start.sh \
-            claude/hooks/notify.sh
+  build:
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Python Syntax Check
-        run: |
-          python3 -m py_compile claude/plugins/kb/bin/kbsearch.py
+      - name: Install Dependencies
+        run: sudo apt-get update && sudo apt-get install -y ripgrep python3
 
       - name: Codex Sync Smoke Test
         run: |

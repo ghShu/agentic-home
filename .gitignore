@@ -12,3 +12,7 @@ plans/
 
 # Claude Code runtime
 .claude/
+
+# Python bytecode (left behind by `python3 -m py_compile` in lint tests)
+__pycache__/
+*.pyc

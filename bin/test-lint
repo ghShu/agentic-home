@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# Run the same syntax + shellcheck + Python checks the CI workflow runs.
+# Keeps a single source of truth for lint coverage; CI invokes this script.
+
+set -euo pipefail
+
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$REPO_DIR"
+
+SHELL_FILES=(
+  install.sh
+  agentic-dev-setup.sh
+  bin/agent-team
+  bin/sync-codex-from-claude
+  bin/test-codex-skill-sync
+  bin/test-portable-configs
+  bin/test-install-idempotent
+  bin/test-lint
+  claude/hooks/session-start.sh
+  claude/hooks/notify.sh
+)
+
+PYTHON_FILES=(
+  claude/plugins/kb/bin/kbsearch.py
+)
+
+fail() {
+  echo "ERROR: $*" >&2
+  exit 1
+}
+
+echo "[1/3] Bash syntax check"
+for f in "${SHELL_FILES[@]}"; do
+  bash -n "$f" || fail "bash -n failed for $f"
+done
+
+echo "[2/3] ShellCheck"
+if ! command -v shellcheck >/dev/null 2>&1; then
+  fail "shellcheck is not installed (brew install shellcheck / apt-get install shellcheck)"
+fi
+shellcheck "${SHELL_FILES[@]}"
+
+echo "[3/3] Python syntax check"
+if ! command -v python3 >/dev/null 2>&1; then
+  fail "python3 is not installed"
+fi
+for f in "${PYTHON_FILES[@]}"; do
+  python3 -m py_compile "$f" || fail "py_compile failed for $f"
+done
+
+echo "PASS: lint checks succeeded"

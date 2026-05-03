@@ -5,6 +5,11 @@
 #   ./agentic-dev-setup.sh --from STEP  # resume from a specific step
 #   ./agentic-dev-setup.sh STEP [STEP]  # run specific step(s)
 #   ./agentic-dev-setup.sh --help
+#
+# Output is appended to a user-owned log at "$OUTPUT_FILE" via
+# `>> "$OUTPUT_FILE" 2>&1`. The redirect runs in the parent shell (not under
+# sudo), so SC2024 ("sudo doesn't affect redirects") does not apply.
+# shellcheck disable=SC2024
 VERSION=1.0.0
 
 set -euo pipefail
@@ -21,7 +26,6 @@ case "${1:-}" in
 esac
 
 # ─── Colors & Logging ─────────────────────────────────────────────────────────
-GREEN='\033[0;32m'
 BGREEN='\033[1;32m'
 BROWN='\033[0;33m'
 BBROWN='\033[1;33m'
@@ -33,11 +37,13 @@ NC='\033[0m'
 OUTPUT_FILE="/tmp/agentic-dev-setup-$(date '+%F-%T').log"
 PID_FILE="/tmp/mac_setup_sudo_cache"
 
-echo_t() { printf "\n${BOLD}$(date)  -->${NC} $*\n" | tee -a "$OUTPUT_FILE"; }
-echo_i() { printf "${BOLD}  -->${NC} $*\n"           | tee -a "$OUTPUT_FILE"; }
-echo_w() { printf "\n${BBROWN}  --> WARN:${NC} $*\n" | tee -a "$OUTPUT_FILE"; }
-echo_e() { printf "\n${BRED}  --> ERROR:${NC} $*\n"  | tee -a "$OUTPUT_FILE"; }
-echo_ask() { printf "${BGREEN}  --> $*${NC}\n"; }
+# %b interprets backslash escapes (the ANSI codes in $BOLD etc.) and avoids
+# treating expanded color/text content as a printf format string (SC2059).
+echo_t() { printf '%b\n' "\n${BOLD}$(date)  -->${NC} $*" | tee -a "$OUTPUT_FILE"; }
+echo_i() { printf '%b\n' "${BOLD}  -->${NC} $*"           | tee -a "$OUTPUT_FILE"; }
+echo_w() { printf '%b\n' "\n${BBROWN}  --> WARN:${NC} $*" | tee -a "$OUTPUT_FILE"; }
+echo_e() { printf '%b\n' "\n${BRED}  --> ERROR:${NC} $*"  | tee -a "$OUTPUT_FILE"; }
+echo_ask() { printf '%b\n' "${BGREEN}  --> $*${NC}"; }
 
 _confirm_choice() {
   local prompt="$1"
@@ -49,7 +55,7 @@ _confirm_choice() {
     case $response in
       [yY][eE][sS]|[yY]) return 0 ;;
       [nN][oO]|[nN])     return 1 ;;
-      *) printf "${RED}Please answer yes or no.${NC}\n" ;;
+      *) printf '%b\n' "${RED}Please answer yes or no.${NC}" ;;
     esac
   done
 }
@@ -93,6 +99,7 @@ _load_nvm() {
   export NVM_DIR="$HOME/.nvm"
   local _nvm_sh
   for _nvm_sh in "/opt/homebrew/opt/nvm/nvm.sh" "$NVM_DIR/nvm.sh"; do
+    # shellcheck source=/dev/null
     [ -s "$_nvm_sh" ] && { source "$_nvm_sh"; return 0; }
   done
 }
@@ -384,6 +391,7 @@ write_zshrc() {
   echo_t "Writing clean ~/.zshrc"
 
   if [ -f ~/.zshrc ]; then
+    # shellcheck disable=SC2088  # display string for the user — tilde expansion not desired
     echo_w "~/.zshrc already exists — skipping to preserve your customizations."
     echo_w "Ensure the following are present in your ~/.zshrc:"
     echo_w "  \$HOME/bin and \$HOME/.local/bin in PATH"
@@ -429,6 +437,7 @@ unset _nvm_sh
 [[ -f "$HOME/.github.env" ]]    && source "$HOME/.github.env"
 ZSHRC
 
+  # shellcheck disable=SC2088  # display string for the user — tilde expansion not desired
   echo_i "~/.zshrc written"
   echo_ask "IMPORTANT: Move your GITHUB_TOKEN out of .zshrc into ~/.github.env"
   echo_ask "  echo 'export GITHUB_TOKEN=your_token_here' > ~/.github.env && chmod 600 ~/.github.env"
@@ -518,10 +527,10 @@ configure_git() {
   current_name=$(git config --global user.name 2>/dev/null || echo "")
   current_email=$(git config --global user.email 2>/dev/null || echo "")
 
-  read -r -p "$(printf "${BGREEN}  --> Your full name for git commits [current: '${current_name}']: ${NC}")" git_name
+  read -r -p "$(printf '%b' "${BGREEN}  --> Your full name for git commits [current: '${current_name}']: ${NC}")" git_name
   git_name="${git_name:-$current_name}"
 
-  read -r -p "$(printf "${BGREEN}  --> Your email for git commits [current: '${current_email}']: ${NC}")" git_email
+  read -r -p "$(printf '%b' "${BGREEN}  --> Your email for git commits [current: '${current_email}']: ${NC}")" git_email
   git_email="${git_email:-$current_email}"
 
   git config --global user.name  "$git_name"
@@ -700,9 +709,9 @@ setup_agentic_home() {
 
 print_summary() {
   echo ""
-  printf "${BGREEN}════════════════════════════════════════${NC}\n"
-  printf "${BGREEN}  agentic-dev-setup.sh complete!${NC}\n"
-  printf "${BGREEN}════════════════════════════════════════${NC}\n"
+  printf '%b\n' "${BGREEN}════════════════════════════════════════${NC}"
+  printf '%b\n' "${BGREEN}  agentic-dev-setup.sh complete!${NC}"
+  printf '%b\n' "${BGREEN}════════════════════════════════════════${NC}"
   echo ""
   echo_i "Full log: $OUTPUT_FILE"
   echo ""
@@ -778,8 +787,8 @@ print_help() {
 }
 
 main() {
-  printf "${BGREEN}agentic-dev-setup.sh v${VERSION} [%s]${NC}\n" "$OS"
-  printf "${BROWN}Full log: $OUTPUT_FILE${NC}\n\n"
+  printf '%b [%s]\n' "${BGREEN}agentic-dev-setup.sh v${VERSION}${NC}" "$OS"
+  printf '%b\n\n' "${BROWN}Full log: $OUTPUT_FILE${NC}"
 
   case "${1:-}" in
     --help|-h)   print_help; exit 0 ;;
