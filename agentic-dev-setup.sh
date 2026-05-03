@@ -64,7 +64,9 @@ SUDO_LOOP_PID=""
 
 _cleanup() {
   rm -f "$PID_FILE" >/dev/null 2>&1
-  [ -n "$SUDO_LOOP_PID" ] && kill "$SUDO_LOOP_PID" 2>/dev/null || true
+  if [ -n "$SUDO_LOOP_PID" ]; then
+    kill "$SUDO_LOOP_PID" 2>/dev/null || true
+  fi
 }
 
 _ensure_sudo() {
