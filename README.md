@@ -13,7 +13,7 @@ Clone this repo and run the install script to get:
 - Sensible permission defaults with explicit deny rules for `.env`, SSH keys, and common credential files
 - `kb` plugin — personal knowledge base with ingest → compile → query → lint workflow
 - `sessions` plugin — search past sessions and harvest insights into the knowledge base
-- `pr` plugin — full PR lifecycle (create, review, merge, comment, sync, and more)
+- `pr` plugin — full PR lifecycle (create, review, merge, comment, sync, review-cycle, and more)
 - Automatic Claude → Codex skill translation for minimal-overhead cross-tool reuse
 
 ## Setup
