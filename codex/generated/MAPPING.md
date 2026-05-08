@@ -19,6 +19,7 @@ Do not edit generated files by hand.
 - `claude/plugins/pr/skills/commit/SKILL.md` -> `codex/generated/skills/pr-commit/SKILL.md`
 - `claude/plugins/pr/skills/create/SKILL.md` -> `codex/generated/skills/pr-create/SKILL.md`
 - `claude/plugins/pr/skills/merge/SKILL.md` -> `codex/generated/skills/pr-merge/SKILL.md`
+- `claude/plugins/pr/skills/review-cycle/SKILL.md` -> `codex/generated/skills/pr-review-cycle/SKILL.md`
 - `claude/plugins/pr/skills/review/SKILL.md` -> `codex/generated/skills/pr-review/SKILL.md`
 - `claude/plugins/pr/skills/sync/SKILL.md` -> `codex/generated/skills/pr-sync/SKILL.md`
 - `claude/plugins/pr/skills/update/SKILL.md` -> `codex/generated/skills/pr-update/SKILL.md`
