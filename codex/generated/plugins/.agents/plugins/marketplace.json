@@ -66,6 +66,15 @@
       "author": {
         "name": "agentic-home"
       }
+    },
+    {
+      "name": "eu",
+      "source": "./eu",
+      "description": "Local private skills (source gitignored; install will no-op on forks)",
+      "version": "1.0.0",
+      "author": {
+        "name": "agentic-home"
+      }
     }
   ]
 }

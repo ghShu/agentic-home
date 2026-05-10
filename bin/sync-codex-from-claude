@@ -90,10 +90,18 @@ for source in "$CLAUDE_DIR/skills"/*/SKILL.md; do
   write_skill "$source" "$skill_slug" "$skill_name" "$raw_desc"
 done
 
+# Skip plugin dirs that git is configured to ignore — used for local-only plugins
+# whose source should never appear in the tracked codex mirror or MAPPING.md.
+is_plugin_gitignored() {
+  git -C "$REPO_DIR" check-ignore -q "$1" 2>/dev/null
+}
+
 # Translate plugin skills (flattened to namespaced Codex skill names).
 for source in "$CLAUDE_DIR/plugins"/*/skills/*/SKILL.md; do
   [ -f "$source" ] || continue
-  plugin_name="$(basename "$(dirname "$(dirname "$(dirname "$source")")")")"
+  plugin_dir="$(dirname "$(dirname "$(dirname "$source")")")"
+  is_plugin_gitignored "$plugin_dir" && continue
+  plugin_name="$(basename "$plugin_dir")"
   local_name="$(basename "$(dirname "$source")")"
   raw_name="$(extract_meta name "$source")"
   raw_desc="$(extract_meta description "$source")"
@@ -127,6 +135,7 @@ EOF
 for plugin_manifest in "$CLAUDE_DIR/plugins"/*/.claude-plugin/plugin.json; do
   [ -f "$plugin_manifest" ] || continue
   plugin_dir="$(dirname "$(dirname "$plugin_manifest")")"
+  is_plugin_gitignored "$plugin_dir" && continue
   plugin_name="$(basename "$plugin_dir")"
   out_plugin="$OUT_PLUGINS/$plugin_name"
   rel_source="${plugin_manifest#"$REPO_DIR/"}"

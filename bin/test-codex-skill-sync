@@ -47,6 +47,14 @@ echo "  Generated plugins: $plugin_count"
 agent_count="$(find "$OUT_AGENTS" -maxdepth 1 -type f -name '*.md' | wc -l | tr -d ' ')"
 echo "  Generated agents: $agent_count"
 
+# Filter out files inside gitignored plugin dirs (e.g., local-only plugins).
+filter_gitignored() {
+  while IFS= read -r f; do
+    git -C "$REPO_DIR" check-ignore -q "$f" 2>/dev/null && continue
+    echo "$f"
+  done
+}
+
 echo "[3/7] Verifying every Claude skill has a mapping entry"
 missing_map=0
 while IFS= read -r src; do
@@ -55,7 +63,7 @@ while IFS= read -r src; do
     echo "  Missing mapping for: $rel" >&2
     missing_map=1
   fi
-done < <(find "$CLAUDE_DIR/skills" "$CLAUDE_DIR/plugins" -type f -name SKILL.md | sort)
+done < <(find "$CLAUDE_DIR/skills" "$CLAUDE_DIR/plugins" -type f -name SKILL.md | filter_gitignored | sort)
 [ "$missing_map" -eq 0 ] || fail "mapping coverage failed"
 
 echo "[4/7] Verifying every Claude plugin manifest has a translated codex plugin mapping"
@@ -66,7 +74,7 @@ while IFS= read -r manifest; do
     echo "  Missing plugin mapping for: $rel" >&2
     missing_plugin_map=1
   fi
-done < <(find "$CLAUDE_DIR/plugins" -type f -path '*/.claude-plugin/plugin.json' | sort)
+done < <(find "$CLAUDE_DIR/plugins" -type f -path '*/.claude-plugin/plugin.json' | filter_gitignored | sort)
 [ "$missing_plugin_map" -eq 0 ] || fail "plugin mapping coverage failed"
 
 echo "[5/7] Verifying every top-level Claude agent has a mapping entry"

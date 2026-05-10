@@ -16,3 +16,8 @@ plans/
 # Python bytecode (left behind by `python3 -m py_compile` in lint tests)
 __pycache__/
 *.pyc
+
+# Local-only plugin (source is private; only its marketplace entry is tracked)
+/claude/plugins/eu/
+/codex/generated/plugins/eu/
+/codex/generated/skills/eu-*/
