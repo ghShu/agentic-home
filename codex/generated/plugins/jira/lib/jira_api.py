@@ -8,7 +8,7 @@ optional fallback (see plugins/jira/jira.env.example for the format):
     JIRA_PROJECT_KEY           Default project key for issue creation
     JIRA_CUSTOM_FIELDS_FILE    Optional. JSON file mapping customfield_NNNNN
                                IDs to display names, e.g.
-                               {"customfield_10082": "affected_url"}
+                               {"customfield_10100": "team"}
 
 Usage:
     from jira_api import JiraClient

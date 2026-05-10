@@ -16,7 +16,6 @@ Usage:
 """
 
 import os
-import re
 import subprocess
 import sys
 
@@ -36,11 +35,6 @@ def _config(key):
     return load_env_file(os.environ.get("JIRA_ENV_FILE", "~/.jira.env")).get(key)
 
 
-def _parse_case_url(url):
-    m = re.search(r"/cases/([a-f0-9-]{36})", url)
-    return m.group(1) if m else None
-
-
 def cmd_jira(args):
     if not args:
         die("Usage: jira_cmd jira <jira_url_or_key>")
@@ -51,9 +45,7 @@ def cmd_jira(args):
     custom = summary.get("custom_fields", {})
 
     lines = []
-    lines.append(
-        f"## Jira: [{summary['key']}](https://evenup.atlassian.net/browse/{summary['key']})\n"
-    )
+    lines.append(f"## Jira: [{summary['key']}]({client.host}/browse/{summary['key']})\n")
     lines.append(f"**Summary:** {summary['summary']}")
     lines.append(f"**Status:** {summary['status']} | **Priority:** {summary['priority']}")
     lines.append(f"**Assignee:** {summary['assignee']} | **Reporter:** {summary['reporter']}")
@@ -61,21 +53,12 @@ def cmd_jira(args):
     if summary["labels"]:
         lines.append(f"**Labels:** {', '.join(summary['labels'])}")
 
-    if custom.get("firm_name"):
-        lines.append(f"**Firm:** {custom['firm_name']}")
-    if custom.get("affected_url"):
-        url = custom["affected_url"]
-        lines.append(f"**Affected URL:** {url}")
-        matter_id = _parse_case_url(url)
-        if matter_id:
-            lines.append(f"**Matter ID:** `{matter_id}`")
-    if custom.get("affected_area"):
-        areas = custom["affected_area"]
-        lines.append(f"**Affected Area:** {', '.join(areas) if isinstance(areas, list) else areas}")
-    if custom.get("contact_email"):
-        lines.append(f"**Contact:** {custom['contact_email']}")
-    if custom.get("incident_date"):
-        lines.append(f"**Incident Date:** {custom['incident_date'][:10]}")
+    # Render any custom fields configured via JIRA_CUSTOM_FIELDS_FILE, generically.
+    for name, val in custom.items():
+        label = name.replace("_", " ").title()
+        if isinstance(val, list):
+            val = ", ".join(str(v) for v in val)
+        lines.append(f"**{label}:** {val}")
     lines.append("")
 
     if summary["description"]:
