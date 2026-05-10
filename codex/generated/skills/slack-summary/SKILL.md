@@ -40,7 +40,7 @@ slack_cmd summary ds 7                           # DS channels, last week
 slack_cmd search "from:me on:<today>"            # my messages today (replace <today> with YYYY-MM-DD)
 slack_cmd search "to:me after:<date>"            # mentions of me since date
 slack_cmd search "in:#engineering <keyword>"     # search a channel for keyword
-slack_cmd messages "C0A6G8CR19C,C088PMMTLPK" 3   # specific channels by ID
+slack_cmd messages "C0123456789,C9876543210" 3   # specific channels by ID
 ```
 
 ## Workflow

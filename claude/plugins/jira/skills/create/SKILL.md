@@ -1,6 +1,6 @@
 ---
 name: jira:create
-description: Create a new Jira Task in AI Entities (AS), assigned to the current user. Summary defaults to current git branch name.
+description: Create a new Jira issue assigned to the current user. Project key from $JIRA_PROJECT_KEY (or --project). Summary defaults to current git branch name.
 argument-hint: "[summary]"
 allowed-tools: ["Bash"]
 user-invocable: true
@@ -8,7 +8,11 @@ user-invocable: true
 
 # jira:create
 
-Create a Task in the AI Entities (AS) Jira project, assigned to the current user. Summary defaults to the current git branch name if omitted.
+Create a Jira issue assigned to the current user. The project key comes from `$JIRA_PROJECT_KEY` (or `~/.jira.env`), or pass `--project KEY` explicitly. Summary defaults to the current git branch name if omitted.
+
+## Configuration
+
+Host and default project are read from `$JIRA_HOST` and `$JIRA_PROJECT_KEY` (or `~/.jira.env`). See `plugins/jira/jira.env.example`.
 
 ## Usage
 
@@ -19,17 +23,17 @@ jira_cmd create [summary] [--project KEY] [--description TEXT]
 ### Examples
 
 ```bash
-# Use current git branch name as summary
+# Use current git branch name as summary, default project from env
 jira_cmd create
 
 # Explicit summary
-jira_cmd create "Add CLP timeout alerting"
+jira_cmd create "Add request timeout alerting"
 
 # With description
 jira_cmd create "Fix retry logic" --description "Retries are not respecting backoff config"
 
-# Different project
-jira_cmd create "My task" --project SP
+# Override project
+jira_cmd create "My task" --project PROJ
 ```
 
 ## Output

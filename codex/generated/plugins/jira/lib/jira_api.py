@@ -1,12 +1,19 @@
 #!/usr/bin/env python3
 """Jira API client using Chrome cookies for authentication.
 
-Location: .claude/envs/python/lib/jira_api.py
+Config is loaded from environment variables, with `~/.jira.env` as an
+optional fallback (see plugins/jira/jira.env.example for the format):
+
+    JIRA_HOST                  Required. e.g. https://yourtenant.atlassian.net
+    JIRA_PROJECT_KEY           Default project key for issue creation
+    JIRA_CUSTOM_FIELDS_FILE    Optional. JSON file mapping customfield_NNNNN
+                               IDs to display names, e.g.
+                               {"customfield_10082": "affected_url"}
 
 Usage:
     from jira_api import JiraClient
-    client = JiraClient()
-    issue = client.get_issue("SP-4046")
+    client = JiraClient()                 # reads JIRA_HOST from env/file
+    issue = client.get_issue("PROJ-1234")
 """
 
 import json
@@ -24,6 +31,18 @@ sys.path.insert(
     os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "_lib"),
 )
 from chrome_cookies import get_cookies  # noqa: E402
+from cli_helpers import load_env_file  # noqa: E402
+
+
+_JIRA_ENV_FILE = os.environ.get("JIRA_ENV_FILE", "~/.jira.env")
+
+
+def _config(key):
+    """Read a config value from os.environ, falling back to ~/.jira.env."""
+    val = os.environ.get(key)
+    if val:
+        return val
+    return load_env_file(_JIRA_ENV_FILE).get(key)
 
 
 def _open_and_wait(url, service_name):
@@ -37,9 +56,6 @@ def _open_and_wait(url, service_name):
     time.sleep(10)
 
 
-JIRA_HOST = "https://evenup.atlassian.net"
-
-
 def _get_jira_token():
     """Extract Jira tenant.session.token from Chrome cookies."""
     for _, _name, val in get_cookies("%atlassian.net%", ["tenant.session.token"]):
@@ -49,10 +65,29 @@ def _get_jira_token():
     raise RuntimeError("No Jira session token found. Log into Jira in Chrome first.")
 
 
+def _load_custom_fields():
+    """Optional map of customfield_* IDs to display names, from JIRA_CUSTOM_FIELDS_FILE."""
+    path = _config("JIRA_CUSTOM_FIELDS_FILE")
+    if not path:
+        return {}
+    expanded = os.path.expanduser(path)
+    if not os.path.isfile(expanded):
+        return {}
+    with open(expanded) as f:
+        return json.load(f)
+
+
 class JiraClient:
-    def __init__(self, host=JIRA_HOST):
+    def __init__(self, host=None):
+        host = host or _config("JIRA_HOST")
+        if not host:
+            raise RuntimeError(
+                "JIRA_HOST not configured. Set it in your environment or in "
+                f"{_JIRA_ENV_FILE} (see claude/plugins/jira/jira.env.example)."
+            )
         self.host = host.rstrip("/")
         self.token = _get_jira_token()
+        self._custom_fields = _load_custom_fields()
 
     def api(self, path, method="GET", data=None):
         """Make a Jira REST API call."""
@@ -69,7 +104,7 @@ class JiraClient:
                     return json.loads(resp.read())
             except urllib.error.HTTPError as e:
                 if attempt == 0 and e.code in (401, 403):
-                    _open_and_wait("https://evenup.atlassian.net", "Jira")
+                    _open_and_wait(self.host, "Jira")
                     self.token = _get_jira_token()
                     continue
                 raise
@@ -78,8 +113,12 @@ class JiraClient:
         """Return the current authenticated user's accountId and displayName."""
         return self.api("/rest/api/3/myself")
 
-    def create_issue(self, summary, project_key="AS", issue_type="Task", description=None, assignee_account_id=None):
+    def create_issue(self, summary, project_key, issue_type="Task", description=None, assignee_account_id=None):
         """Create a new Jira issue. Returns the created issue key and URL."""
+        if not project_key:
+            raise RuntimeError(
+                "project_key is required. Pass --project or set JIRA_PROJECT_KEY."
+            )
         fields = {
             "project": {"key": project_key},
             "summary": summary,
@@ -99,7 +138,7 @@ class JiraClient:
         return {"key": key, "url": url}
 
     def get_issue(self, key, fields=None):
-        """Get a Jira issue by key (e.g., SP-4046).
+        """Get a Jira issue by key (e.g., PROJ-1234).
 
         Returns dict with key, summary, description, status, assignee, comments, etc.
         """
@@ -113,10 +152,8 @@ class JiraClient:
         issue = self.get_issue(key)
         fields = issue.get("fields", {})
 
-        # Extract plain text from ADF description
         desc = _adf_to_text(fields.get("description"))
 
-        # Get comments
         comments = []
         comment_data = fields.get("comment", {}).get("comments", [])
         for c in comment_data:
@@ -125,8 +162,7 @@ class JiraClient:
             created = c.get("created", "?")[:19]
             comments.append({"author": author, "body": body, "created": created})
 
-        # Extract known custom fields
-        custom_fields = _extract_custom_fields(fields)
+        custom_fields = _extract_custom_fields(fields, self._custom_fields)
 
         return {
             "key": issue["key"],
@@ -144,28 +180,15 @@ class JiraClient:
         }
 
 
-# Known SP-project custom field IDs (discovered from Jira API).
-# To find new ones: client.get_issue("SP-XXXX") and inspect customfield_* keys.
-_KNOWN_CUSTOM_FIELDS = {
-    "customfield_10082": "affected_url",  # Case URL (evenup.law/cases/...)
-    "customfield_10185": "firm_name",  # Firm/customer name
-    "customfield_10468": "affected_area",  # Product area (list of options)
-    "customfield_10183": "contact_email",  # Customer contact email
-    "customfield_10187": "incident_date",  # When issue was first reported
-}
-
-
-def _extract_custom_fields(fields):
-    """Extract known custom fields into a clean dict."""
+def _extract_custom_fields(fields, mapping):
+    """Extract known custom fields into a clean dict. `mapping` is {field_id: name}."""
     result = {}
-    for field_id, name in _KNOWN_CUSTOM_FIELDS.items():
+    for field_id, name in mapping.items():
         val = fields.get(field_id)
         if val is None:
             continue
-        # Option field: {"value": "Yes", "id": "10140"}
         if isinstance(val, dict) and "value" in val:
             result[name] = val["value"]
-        # Multi-option field: [{"value": "Treatment Timeline"}, ...]
         elif isinstance(val, list):
             values = []
             for item in val:
@@ -175,7 +198,6 @@ def _extract_custom_fields(fields):
                     values.append(item)
             if values:
                 result[name] = values
-        # String field
         elif isinstance(val, str):
             result[name] = val
     return result

@@ -4,9 +4,15 @@
 # ///
 """Jira ticket inspection and creation.
 
+Configuration is read from environment variables, with ~/.jira.env as an
+optional fallback (see plugins/jira/jira.env.example):
+
+    JIRA_HOST           Required, e.g. https://yourtenant.atlassian.net
+    JIRA_PROJECT_KEY    Default project key for `create`
+
 Usage:
     jira_cmd jira <jira_url_or_key>              Read Jira ticket details
-    jira_cmd create [summary] [--project KEY]    Create a Task in AI Entities (AS)
+    jira_cmd create [summary] [--project KEY]    Create a Jira issue
 """
 
 import os
@@ -19,8 +25,15 @@ _LIB = os.path.join(_PLUGIN_DIR, "lib")
 _SHARED_LIB = os.path.join(_PLUGIN_DIR, "..", "_lib")
 sys.path.insert(0, _LIB)
 sys.path.insert(0, _SHARED_LIB)
-from cli_helpers import die  # noqa: E402
+from cli_helpers import die, load_env_file  # noqa: E402
 from jira_api import JiraClient, parse_jira_url  # noqa: E402
+
+
+def _config(key):
+    val = os.environ.get(key)
+    if val:
+        return val
+    return load_env_file(os.environ.get("JIRA_ENV_FILE", "~/.jira.env")).get(key)
 
 
 def _parse_case_url(url):
@@ -93,7 +106,7 @@ def _git_branch():
 
 
 def cmd_create(args):
-    project = "AS"
+    project = None
     summary = None
     description = None
 
@@ -108,6 +121,11 @@ def cmd_create(args):
         else:
             summary = args[i]
             i += 1
+
+    if not project:
+        project = _config("JIRA_PROJECT_KEY")
+    if not project:
+        die("--project required (or set JIRA_PROJECT_KEY in ~/.jira.env)")
 
     if not summary:
         summary = _git_branch()
