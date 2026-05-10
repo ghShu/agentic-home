@@ -28,7 +28,7 @@ Verify agentsview is running:
 curl -s --max-time 2 "http://localhost:${AGENTSVIEW_PORT}/api/v1/version"
 ```
 
-If it fails, tell the user: "agentsview is not running. Start a new session (it auto-starts on session begin) or run `agentsview -no-browser &`."
+If it fails, tell the user: "agentsview is not running. Start a new session (it auto-starts on session begin) or run `agentsview serve --no-browser &`."
 
 ### Step 2 — Search sessions
 
