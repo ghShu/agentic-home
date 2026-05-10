@@ -30,6 +30,15 @@
       "author": {
         "name": "agentic-home"
       }
+    },
+    {
+      "name": "jira",
+      "source": "./jira",
+      "description": "Jira operations: read ticket details and create new tasks",
+      "version": "1.0.0",
+      "author": {
+        "name": "agentic-home"
+      }
     }
   ]
 }

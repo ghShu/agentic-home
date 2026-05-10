@@ -143,12 +143,23 @@ for plugin_manifest in "$CLAUDE_DIR/plugins"/*/.claude-plugin/plugin.json; do
   if [ -d "$plugin_dir/bin" ]; then
     cp -R "$plugin_dir/bin" "$out_plugin/bin"
   fi
+  if [ -d "$plugin_dir/lib" ]; then
+    cp -R "$plugin_dir/lib" "$out_plugin/lib"
+  fi
   if [ -d "$plugin_dir/seed" ]; then
     cp -R "$plugin_dir/seed" "$out_plugin/seed"
   fi
 
   echo "- \`$rel_source\` -> \`codex/generated/plugins/$plugin_name/.codex-plugin/plugin.json\`" >> "$MAP_FILE"
 done
+
+# Mirror the shared library directory used by plugin bin/lib scripts.
+shared_lib="$CLAUDE_DIR/plugins/_lib"
+if [ -d "$shared_lib" ]; then
+  cp -R "$shared_lib" "$OUT_PLUGINS/_lib"
+  rel_source="${shared_lib#"$REPO_DIR/"}"
+  echo "- \`$rel_source\` -> \`codex/generated/plugins/_lib\`" >> "$MAP_FILE"
+fi
 
 # Translate the Claude marketplace manifest into the Codex location so
 # `codex plugin marketplace add codex/generated/plugins` registers it.
