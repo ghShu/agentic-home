@@ -1,0 +1,8 @@
+{
+  "name": "handoff",
+  "description": "Session handoff — capture and restore work context across sessions and AI tools",
+  "version": "1.0.0",
+  "author": {
+    "name": "agentic-home"
+  }
+}
