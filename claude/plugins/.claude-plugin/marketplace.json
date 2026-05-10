@@ -57,6 +57,15 @@
       "author": {
         "name": "agentic-home"
       }
+    },
+    {
+      "name": "gdocs",
+      "source": "./gdocs",
+      "description": "Google Docs/Sheets/Slides reader via gcloud CLI auth",
+      "version": "1.0.0",
+      "author": {
+        "name": "agentic-home"
+      }
     }
   ]
 }

@@ -8,6 +8,7 @@ Do not edit generated files by hand.
 - `claude/skills/create-pr/SKILL.md` -> `codex/generated/skills/create-pr/SKILL.md`
 - `claude/skills/resolve-conflicts/SKILL.md` -> `codex/generated/skills/resolve-conflicts/SKILL.md`
 - `claude/skills/update-pr/SKILL.md` -> `codex/generated/skills/update-pr/SKILL.md`
+- `claude/plugins/gdocs/skills/read/SKILL.md` -> `codex/generated/skills/gdocs-read/SKILL.md`
 - `claude/plugins/handoff/skills/read/SKILL.md` -> `codex/generated/skills/handoff-read/SKILL.md`
 - `claude/plugins/handoff/skills/write/SKILL.md` -> `codex/generated/skills/handoff-write/SKILL.md`
 - `claude/plugins/jira/skills/create/SKILL.md` -> `codex/generated/skills/jira-create/SKILL.md`
@@ -36,6 +37,7 @@ Do not edit generated files by hand.
 
 ## Plugins
 
+- `claude/plugins/gdocs/.claude-plugin/plugin.json` -> `codex/generated/plugins/gdocs/.codex-plugin/plugin.json`
 - `claude/plugins/handoff/.claude-plugin/plugin.json` -> `codex/generated/plugins/handoff/.codex-plugin/plugin.json`
 - `claude/plugins/jira/.claude-plugin/plugin.json` -> `codex/generated/plugins/jira/.codex-plugin/plugin.json`
 - `claude/plugins/kb/.claude-plugin/plugin.json` -> `codex/generated/plugins/kb/.codex-plugin/plugin.json`
