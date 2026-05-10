@@ -28,6 +28,7 @@ Do not edit generated files by hand.
 - `claude/plugins/pr/skills/update/SKILL.md` -> `codex/generated/skills/pr-update/SKILL.md`
 - `claude/plugins/sessions/skills/harvest/SKILL.md` -> `codex/generated/skills/sessions-harvest/SKILL.md`
 - `claude/plugins/sessions/skills/search/SKILL.md` -> `codex/generated/skills/sessions-search/SKILL.md`
+- `claude/plugins/slack/skills/summary/SKILL.md` -> `codex/generated/skills/slack-summary/SKILL.md`
 
 ## Agents
 
@@ -40,5 +41,6 @@ Do not edit generated files by hand.
 - `claude/plugins/kb/.claude-plugin/plugin.json` -> `codex/generated/plugins/kb/.codex-plugin/plugin.json`
 - `claude/plugins/pr/.claude-plugin/plugin.json` -> `codex/generated/plugins/pr/.codex-plugin/plugin.json`
 - `claude/plugins/sessions/.claude-plugin/plugin.json` -> `codex/generated/plugins/sessions/.codex-plugin/plugin.json`
+- `claude/plugins/slack/.claude-plugin/plugin.json` -> `codex/generated/plugins/slack/.codex-plugin/plugin.json`
 - `claude/plugins/_lib` -> `codex/generated/plugins/_lib`
 - `claude/plugins/.claude-plugin/marketplace.json` -> `codex/generated/plugins/.agents/plugins/marketplace.json`
