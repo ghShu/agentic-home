@@ -87,5 +87,6 @@ Read the script output and identify:
 
 ## Prerequisites
 
-- Logged into Slack workspace in Google Chrome
+- Logged into Slack workspace in Google Chrome (via `app.slack.com`)
 - macOS (uses Keychain for Chrome cookie decryption)
+- `brew install leveldb` (the plugin reads Chrome's localStorage via `leveldbutil` to extract the `xoxc` token, which Slack moved out of HTML during its Gantry-v2 migration)

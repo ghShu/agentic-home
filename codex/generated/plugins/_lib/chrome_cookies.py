@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-"""Extract cookies from Chrome on macOS. Used by multiple Claude Code skills.
-
-Location: .claude/envs/python/lib/chrome_cookies.py
+"""Extract Chrome cookies (and Slack tokens) on macOS.
 
 Usage as module:
     from chrome_cookies import get_slack_token
@@ -9,8 +7,13 @@ Usage as module:
 
 Usage as CLI:
     python3 chrome_cookies.py slack   # prints JSON token for Slack
+
+Slack token extraction depends on Homebrew's `leveldb` package (provides
+`leveldbutil`, used to read Chrome's localStorage). Install with:
+    brew install leveldb
 """
 
+import glob
 import hashlib
 import json
 import os
@@ -28,6 +31,10 @@ from Crypto.Cipher import AES
 CHROME_COOKIES = os.path.expanduser(
     "~/Library/Application Support/Google/Chrome/Default/Cookies"
 )
+CHROME_LOCALSTORAGE = os.path.expanduser(
+    "~/Library/Application Support/Google/Chrome/Default/Local Storage/leveldb"
+)
+LEVELDBUTIL = "/opt/homebrew/opt/leveldb/bin/leveldbutil"
 
 
 def _get_chrome_key():
@@ -97,18 +104,51 @@ def get_cookies(host_pattern, cookie_names=None):
         os.unlink(tmp)
 
 
+def _dump_chrome_localstorage():
+    """Yield (filename, bytes) tuples from a snapshot of Chrome's localStorage.
+
+    Chrome holds an exclusive lock on the running profile's leveldb, so we
+    copy the *.ldb/*.log files to a temp dir before invoking leveldbutil.
+    """
+    if not os.path.isfile(LEVELDBUTIL):
+        raise RuntimeError(
+            f"leveldbutil not found at {LEVELDBUTIL}. Install with: brew install leveldb"
+        )
+    if not os.path.isdir(CHROME_LOCALSTORAGE):
+        raise RuntimeError(
+            f"Chrome localStorage dir not found at {CHROME_LOCALSTORAGE}"
+        )
+
+    tmp = tempfile.mkdtemp(prefix="chrome-ls-")
+    try:
+        for fn in os.listdir(CHROME_LOCALSTORAGE):
+            if fn == "LOCK":
+                continue
+            src = os.path.join(CHROME_LOCALSTORAGE, fn)
+            if os.path.isfile(src):
+                shutil.copy2(src, os.path.join(tmp, fn))
+
+        for sst in sorted(glob.glob(f"{tmp}/*.ldb") + glob.glob(f"{tmp}/*.log")):
+            result = subprocess.run([LEVELDBUTIL, "dump", sst], capture_output=True)
+            yield os.path.basename(sst), result.stdout
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
 def get_slack_token():
-    """Extract Slack xoxc token and d cookie from Chrome.
+    """Extract Slack xoxc + d cookie from Chrome storage.
+
+    The xoxc token lives in Chrome's localStorage (under localConfig_v2) since
+    Slack's Gantry-v2 client migration moved bootstrap state out of the
+    server-rendered HTML. The d cookie still lives in the cookies DB.
 
     Returns:
         dict with keys: xoxc, d_cookie, workspace
     """
-    # Single DB read: get all slack cookies at once
     all_cookies = get_cookies("%slack.com%")
     if not all_cookies:
         raise RuntimeError("No Slack cookies found. Log into Slack in Chrome first.")
 
-    # Find d cookie with xoxd token
     d_cookie_encoded = None
     for _, name, val in all_cookies:
         if name == "d" and "xoxd-" in val:
@@ -120,30 +160,32 @@ def get_slack_token():
             "No Slack session cookie found. Log into Slack in Chrome first."
         )
 
-    # Detect workspace from cookie hosts
-    workspaces = set()
-    for host, _, _ in all_cookies:
-        host = host.lstrip(".")
-        if host.endswith(".slack.com") and host not in ("slack.com", "api.slack.com"):
-            workspaces.add(host.replace(".slack.com", ""))
-    if not workspaces:
-        raise RuntimeError("Could not detect Slack workspace")
-    workspace = sorted(workspaces)[0]
+    xoxc = None
+    workspace = None
+    xoxc_re = re.compile(rb"xoxc-[A-Za-z0-9_-]+")
+    domain_re = re.compile(rb'"domain"\s*:\s*"([a-zA-Z0-9_-]+)"')
+    for _fname, blob in _dump_chrome_localstorage():
+        if xoxc is None:
+            m = xoxc_re.search(blob)
+            if m:
+                xoxc = m.group(0).decode()
+        if workspace is None:
+            m = domain_re.search(blob)
+            if m:
+                workspace = m.group(1).decode()
+        if xoxc and workspace:
+            break
 
-    # Fetch xoxc token from web client
-    req = urllib.request.Request(f"https://{workspace}.slack.com/?no_sso=1")
-    req.add_header("Cookie", f"d={d_cookie_encoded}")
-    with urllib.request.urlopen(req) as resp:
-        body = resp.read().decode("utf-8", errors="replace")
-
-    match = re.search(r"(xoxc-[a-zA-Z0-9_-]+)", body)
-    if not match:
+    if not xoxc:
         raise RuntimeError(
-            "Could not extract xoxc token. Session may be expired — re-login to Slack in Chrome."
+            "No xoxc token in Chrome localStorage. "
+            "Log into Slack at https://app.slack.com in Chrome and refresh."
         )
 
+    workspace = os.environ.get("SLACK_WORKSPACE") or workspace or "slack"
+
     return {
-        "xoxc": match.group(1),
+        "xoxc": xoxc,
         "d_cookie": d_cookie_encoded,
         "workspace": workspace,
     }
