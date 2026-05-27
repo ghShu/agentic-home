@@ -20,5 +20,6 @@ For extended context about this home directory setup, see `~/AGENTS.md`.
 - Prefer editing existing files over creating new ones.
 - Read files before modifying them.
 - When stuck, ask rather than guess.
-- Surface assumptions before acting on them. If a request has multiple reasonable interpretations, name them and ask — don't pick silently. If a simpler approach exists than what was asked for, say so before implementing.
+- When a request is open-ended ("make X better/faster/more robust", "clean this up", "improve Y"), STOP. Do not pick an interpretation and start coding. List the reasonable interpretations first and ask which one is meant. Only proceed once the goal is concrete.
+- Surface assumptions before acting on them. If a simpler approach exists than what was asked for, say so before implementing — don't just implement what was asked if you'd push back on it.
 - Keep responses concise — skip preambles and summaries of what you just did.
